@@ -10,220 +10,101 @@ body {
   background: #0d0d1a;
   color: #fff;
   font-family: 'Segoe UI', Tahoma, sans-serif;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
-  padding: 20px 16px;
-  gap: 16px;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; padding: 20px 16px; gap: 16px;
 }
 h1 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 20px; font-weight: 700;
   background: linear-gradient(135deg, #c084fc, #60a5fa, #f472b6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 #character-container {
-  width: 400px;
-  height: 440px;
-  border-radius: 24px;
-  border: 1px solid rgba(192, 132, 252, 0.2);
-  box-shadow: 0 0 60px rgba(192, 132, 252, 0.1);
-  overflow: hidden;
-  position: relative;
+  width: 400px; height: 440px; border-radius: 24px;
+  border: 1px solid rgba(192,132,252,0.2);
+  box-shadow: 0 0 60px rgba(192,132,252,0.1); overflow: hidden; position: relative;
 }
 canvas { display: block; }
-
-/* ── Level meter ── */
 #level-bar-wrap {
-  position: absolute;
-  bottom: 12px; left: 12px; right: 12px;
-  height: 6px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 3px;
-  overflow: hidden;
-  opacity: 0;
-  transition: opacity 0.3s;
+  position: absolute; bottom: 12px; left: 12px; right: 12px;
+  height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px;
+  overflow: hidden; opacity: 0; transition: opacity 0.3s;
 }
 #level-bar-wrap.visible { opacity: 1; }
 #level-bar {
-  height: 100%;
-  width: 0%;
+  height: 100%; width: 0%;
   background: linear-gradient(90deg, #60a5fa, #c084fc, #f472b6);
-  border-radius: 3px;
-  transition: width 0.05s;
+  border-radius: 3px; transition: width 0.04s;
 }
-
-/* ── Panel ── */
 .panel {
-  width: 400px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
-  overflow: hidden;
+  width: 400px; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden;
 }
-.tabs {
-  display: flex;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
+.tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .tab {
-  flex: 1;
-  padding: 13px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  color: rgba(255,255,255,0.4);
-  transition: all 0.2s;
-  border: none;
-  background: none;
+  flex: 1; padding: 13px; text-align: center; font-size: 13px; font-weight: 600;
+  cursor: pointer; color: rgba(255,255,255,0.4); transition: all 0.2s; border: none; background: none;
 }
-.tab.active {
-  color: #c084fc;
-  border-bottom: 2px solid #c084fc;
-  margin-bottom: -1px;
-}
+.tab.active { color: #c084fc; border-bottom: 2px solid #c084fc; margin-bottom: -1px; }
 .tab-body { display: none; padding: 16px; flex-direction: column; gap: 12px; }
 .tab-body.active { display: flex; }
-
 textarea {
-  width: 100%;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(192,132,252,0.3);
-  border-radius: 12px;
-  color: #fff;
-  padding: 11px 13px;
-  font-size: 13.5px;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-  transition: border-color 0.2s;
+  width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.3);
+  border-radius: 12px; color: #fff; padding: 11px 13px; font-size: 13.5px;
+  line-height: 1.6; resize: vertical; min-height: 80px; font-family: inherit; transition: border-color 0.2s;
 }
 textarea:focus { outline: none; border-color: #c084fc; }
 textarea::placeholder { color: rgba(255,255,255,0.28); }
-
 .row { display: flex; gap: 10px; align-items: center; }
 select {
-  flex: 1;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(192,132,252,0.3);
-  border-radius: 10px;
-  color: #fff;
-  padding: 8px 11px;
-  font-size: 12.5px;
-  cursor: pointer;
+  flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.3);
+  border-radius: 10px; color: #fff; padding: 8px 11px; font-size: 12.5px; cursor: pointer;
 }
 select:focus { outline: none; border-color: #c084fc; }
 select option { background: #1a1a2e; }
 label { font-size: 12px; color: rgba(255,255,255,0.45); white-space: nowrap; }
-
 button {
-  padding: 11px 16px;
-  border: none;
-  border-radius: 12px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+  padding: 11px 16px; border: none; border-radius: 12px;
+  font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
 .btn-primary {
-  flex: 1;
-  background: linear-gradient(135deg, #c084fc, #818cf8);
-  color: #fff;
+  flex: 1; background: linear-gradient(135deg, #c084fc, #818cf8); color: #fff;
   box-shadow: 0 4px 18px rgba(192,132,252,0.28);
 }
 .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-primary.active-speak {
-  background: linear-gradient(135deg, #f472b6, #c084fc);
-  animation: pulse 1.2s ease-in-out infinite;
-}
-.btn-stop {
-  background: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.65);
-  border: 1px solid rgba(255,255,255,0.1);
-}
+.btn-primary.speaking { background: linear-gradient(135deg,#f472b6,#c084fc); animation: pulse 1.2s ease-in-out infinite; }
+.btn-stop { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.1); }
 .btn-stop:hover { background: rgba(255,255,255,0.12); }
-
 .btn-live {
-  width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #34d399, #059669);
-  color: #fff;
-  font-size: 14px;
-  box-shadow: 0 4px 18px rgba(52,211,153,0.25);
-  border-radius: 14px;
+  width: 100%; padding: 14px; background: linear-gradient(135deg,#34d399,#059669);
+  color: #fff; font-size: 14px; box-shadow: 0 4px 18px rgba(52,211,153,0.25); border-radius: 14px;
 }
 .btn-live:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-live.capturing {
-  background: linear-gradient(135deg, #f87171, #dc2626);
-  box-shadow: 0 4px 18px rgba(248,113,113,0.3);
-  animation: pulse 1s ease-in-out infinite;
-}
-
+.btn-live.capturing { background: linear-gradient(135deg,#f87171,#dc2626); animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
-
 .info-box {
-  background: rgba(96,165,250,0.08);
-  border: 1px solid rgba(96,165,250,0.2);
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 12.5px;
-  line-height: 1.7;
-  color: rgba(255,255,255,0.65);
+  background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.2);
+  border-radius: 12px; padding: 12px 14px; font-size: 12.5px; line-height: 1.7; color: rgba(255,255,255,0.65);
 }
 .info-box strong { color: #93c5fd; }
 .info-box ol { padding-left: 16px; margin-top: 6px; }
 .info-box li { margin-bottom: 3px; }
-
-.sensitivity-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-input[type=range] {
-  flex: 1;
-  accent-color: #c084fc;
-  cursor: pointer;
-}
-
-.status-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: rgba(255,255,255,0.38);
-  padding-top: 4px;
-}
-.dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #4ade80;
-  flex-shrink: 0;
-}
-.dot.speaking { background: #f472b6; animation: blink .8s ease-in-out infinite; }
-.dot.capturing { background: #34d399; animation: blink .6s ease-in-out infinite; }
-.dot.error { background: #f87171; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 .method-tabs { display: flex; gap: 8px; }
 .mtab {
   flex: 1; padding: 9px; border: 1px solid rgba(255,255,255,0.1);
   border-radius: 10px; background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s;
+  color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
 .mtab.active { background: rgba(192,132,252,0.15); border-color: #c084fc; color: #c084fc; }
-
-/* Frequency visualizer */
-#freq-canvas {
-  width: 100%;
-  height: 50px;
-  border-radius: 8px;
-  background: rgba(0,0,0,0.25);
-  display: none;
-}
+.slider-row { display: flex; align-items: center; gap: 10px; }
+input[type=range] { flex: 1; accent-color: #c084fc; cursor: pointer; }
+.slider-val { font-size: 12px; color: rgba(255,255,255,0.4); width: 28px; text-align: right; }
+.status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.38); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+.dot.speaking { background: #f472b6; animation: blink .8s ease-in-out infinite; }
+.dot.capturing { background: #34d399; animation: blink .6s ease-in-out infinite; }
+.dot.error { background: #f87171; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+#freq-canvas { width: 100%; height: 46px; border-radius: 8px; background: rgba(0,0,0,0.2); display: none; }
 #freq-canvas.visible { display: block; }
 </style>
 </head>
@@ -244,7 +125,7 @@ input[type=range] {
 
   <!-- TTS TAB -->
   <div class="tab-body active" id="tab-tts">
-    <textarea id="text-input" placeholder="여기에 텍스트를 입력하세요... (Ctrl+Enter)">안녕하세요! 저는 AI 립싱크 캐릭터예요. 텍스트를 입력하고 말하기를 눌러보세요!</textarea>
+    <textarea id="text-input" placeholder="여기에 텍스트 입력... (Ctrl+Enter)">안녕하세요! 저는 AI 립싱크 캐릭터예요. 말하기 버튼을 눌러보세요!</textarea>
     <div class="row">
       <label>목소리</label>
       <select id="voice-select"><option value="-1">로딩 중...</option></select>
@@ -278,55 +159,46 @@ input[type=range] {
 
   <!-- LIVE TAB -->
   <div class="tab-body" id="tab-live">
-
-    <!-- Method selector -->
     <div class="method-tabs">
       <button class="mtab active" id="mtab-mic" onclick="switchMethod('mic')">🎤 마이크 입력</button>
       <button class="mtab" id="mtab-screen" onclick="switchMethod('screen')">🖥️ 화면 공유</button>
     </div>
 
-    <!-- MIC method -->
     <div id="method-mic">
       <div class="info-box">
-        <strong>마이크/오디오 장치로 입력 (권장)</strong><br>
-        오디오 입력 장치를 선택해 AI 소리를 감지합니다.<br><br>
-        <strong>가장 쉬운 방법:</strong> 아래 버튼을 누르고 허용하면 바로 사용 가능합니다.<br><br>
-        <strong>더 깔끔하게 쓰려면:</strong><br>
-        <span style="color:#93c5fd">Windows 설정 → 사운드 → 녹음 탭 → "스테레오 믹스" 활성화</span><br>
-        후 아래에서 해당 장치 선택 → PC 전체 소리 캡처 가능
+        <strong>마이크/오디오 장치 선택 (권장)</strong><br>
+        장치를 선택하고 시작하면 즉시 사용 가능합니다.<br>
+        <strong>PC 전체 소리:</strong> Windows 설정 → 사운드 → 녹음 →
+        <span style="color:#93c5fd">스테레오 믹스 활성화</span> 후 아래에서 선택
       </div>
-      <div class="row" style="margin-top:4px">
+      <div class="row">
         <label>입력 장치</label>
         <select id="mic-select"><option value="">기본 마이크</option></select>
         <button class="btn-stop" style="padding:8px 12px;font-size:12px" onclick="refreshMics()">↻</button>
       </div>
     </div>
 
-    <!-- Screen share method -->
     <div id="method-screen" style="display:none">
       <div class="info-box">
         <strong>화면 공유로 시스템 오디오 캡처</strong><br>
-        ⚠️ <strong>이 캐릭터 창이 아닌</strong>, AI가 말하는 다른 창을 선택하세요.<br><br>
+        ⚠️ <strong>이 캐릭터 창이 아닌</strong> AI가 말하는 다른 창을 선택하세요.<br>
         <ol>
           <li>ChatGPT·Claude 등 AI 탭 또는 전체 화면 선택</li>
           <li><strong>"시스템 오디오 공유"</strong> 체크 ✓</li>
           <li>공유 클릭</li>
         </ol>
-        캐릭터 창 자체를 공유하면 캐릭터가 숨겨집니다.
       </div>
     </div>
 
-    <canvas id="freq-canvas" width="368" height="50"></canvas>
+    <canvas id="freq-canvas" width="368" height="46"></canvas>
 
-    <div class="sensitivity-row">
+    <div class="slider-row">
       <label>민감도</label>
-      <input type="range" id="sensitivity" min="20" max="200" value="60">
-      <span id="sens-val" style="font-size:12px;color:rgba(255,255,255,0.4);width:30px">60</span>
+      <input type="range" id="sensitivity" min="15" max="180" value="55">
+      <span class="slider-val" id="sens-val">55</span>
     </div>
 
-    <button class="btn-live" id="live-btn" onclick="toggleCapture()">
-      🎤 마이크 입력 시작
-    </button>
+    <button class="btn-live" id="live-btn" onclick="toggleCapture()">🎤 마이크 입력 시작</button>
 
     <div class="status-bar">
       <div class="dot" id="live-dot"></div>
@@ -336,405 +208,553 @@ input[type=range] {
 </div>
 
 <script>
-// ══════════════════════════════
-//  CANVAS SETUP
-// ══════════════════════════════
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const W = 400, H = 440;
-const CX = W / 2, CY = H / 2 - 10;
+const W = 400, H = 440, CX = W / 2, CY = H / 2 - 10;
 
-const state = {
-  mouthOpen: 0,
-  mouthTarget: 0,
-  blink: 0,
-  blinkTimer: 2000,
-  blinking: false,
+const st = {
+  // Mouth: 2-axis
+  open: 0, openTarget: 0,        // 0=closed → 1=max open (jaw drop)
+  wide: 0.5, wideTarget: 0.5,    // 0=pursed(O/U) → 1=wide(A/E/I)
+  // Eye
+  blink: 0, blinkTimer: 2200, blinking: false,
+  glanceX: 0, glanceTimer: 0,
+  // Body
+  bobTimer: 0, breathTimer: 0,
   speaking: false,
-  bobTimer: 0,
-  breathTimer: 0,
-  glanceX: 0,
-  glanceTimer: 0,
   cheekAlpha: 0.28,
 };
 
 function lerp(a, b, t) { return a + (b - a) * Math.min(t, 1); }
 function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
-// ══════════════════════════════
+// ════════════════════════════════════════
 //  DRAW
-// ══════════════════════════════
+// ════════════════════════════════════════
 function render() {
   ctx.clearRect(0, 0, W, H);
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, '#131325'); bg.addColorStop(1, '#0d0d1a');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-
-  const glow = ctx.createRadialGradient(CX, CY - 30, 20, CX, CY - 30, 220);
+  const glow = ctx.createRadialGradient(CX, CY - 30, 20, CX, CY - 30, 210);
   glow.addColorStop(0, 'rgba(192,132,252,0.07)'); glow.addColorStop(1, 'transparent');
   ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
 
-  const bob    = Math.sin(state.bobTimer) * (state.speaking ? 2.5 : 0.8);
-  const breath = Math.sin(state.breathTimer) * 1.2;
+  const bob    = Math.sin(st.bobTimer)    * (st.speaking ? 2.2 : 0.7);
+  const breath = Math.sin(st.breathTimer) * 1.1;
   ctx.save(); ctx.translate(0, bob + breath);
 
-  drawShadow(); drawBody(); drawNeck(); drawHairBack();
-  drawFace(); drawEars(); drawEyebrows(); drawEyes();
-  drawNose(); drawMouth(); drawCheeks(); drawHairFront(); drawHairAccessory();
+  drawBody(); drawNeck(); drawHairBack();
+  drawFace(); drawEars();
+  drawEyebrows(); drawEyes(); drawNose(); drawMouth(); drawCheeks();
+  drawHairFront(); drawAccessory();
 
   ctx.restore();
 }
 
-function drawShadow() {
-  ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.22)';
-  ctx.beginPath(); ctx.ellipse(CX+4, CY+6, 96, 112, 0, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-}
+/* ── Body ── */
 function drawBody() {
   ctx.save();
-  const g = ctx.createLinearGradient(CX-110, CY+100, CX+110, H);
-  g.addColorStop(0,'#4c3a9e'); g.addColorStop(1,'#2d1f7a');
+  const g = ctx.createLinearGradient(CX - 110, CY + 100, CX + 110, H);
+  g.addColorStop(0, '#4c3a9e'); g.addColorStop(1, '#2d1f7a');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(CX-110, H);
-  ctx.quadraticCurveTo(CX-120,CY+140,CX-70,CY+95);
-  ctx.quadraticCurveTo(CX-30,CY+80,CX,CY+78);
-  ctx.quadraticCurveTo(CX+30,CY+80,CX+70,CY+95);
-  ctx.quadraticCurveTo(CX+120,CY+140,CX+110,H);
+  ctx.moveTo(CX - 110, H);
+  ctx.quadraticCurveTo(CX - 120, CY + 140, CX - 70, CY + 95);
+  ctx.quadraticCurveTo(CX - 30, CY + 80, CX, CY + 78);
+  ctx.quadraticCurveTo(CX + 30, CY + 80, CX + 70, CY + 95);
+  ctx.quadraticCurveTo(CX + 120, CY + 140, CX + 110, H);
   ctx.closePath(); ctx.fill();
-  // collar
-  ctx.fillStyle='#f5f5ff';
-  ctx.beginPath(); ctx.moveTo(CX-28,CY+95); ctx.lineTo(CX,CY+132); ctx.lineTo(CX+28,CY+95);
-  ctx.lineTo(CX+18,CY+88); ctx.lineTo(CX,CY+108); ctx.lineTo(CX-18,CY+88); ctx.closePath(); ctx.fill();
-  const lc=ctx.createLinearGradient(CX-70,CY+85,CX-18,CY+88);
-  lc.addColorStop(0,'#e0dff8'); lc.addColorStop(1,'#c8c7ee');
-  ctx.fillStyle=lc;
-  ctx.beginPath(); ctx.moveTo(CX-65,CY+88); ctx.lineTo(CX-18,CY+88);
-  ctx.lineTo(CX,CY+132); ctx.lineTo(CX-75,CY+108); ctx.closePath(); ctx.fill();
-  const rc=ctx.createLinearGradient(CX+18,CY+88,CX+70,CY+85);
-  rc.addColorStop(0,'#c8c7ee'); rc.addColorStop(1,'#b8b7de');
-  ctx.fillStyle=rc;
-  ctx.beginPath(); ctx.moveTo(CX+65,CY+88); ctx.lineTo(CX+18,CY+88);
-  ctx.lineTo(CX,CY+132); ctx.lineTo(CX+75,CY+108); ctx.closePath(); ctx.fill();
+
+  // Collar
+  ctx.fillStyle = '#f5f5ff';
+  ctx.beginPath();
+  ctx.moveTo(CX - 28, CY + 93); ctx.lineTo(CX, CY + 130); ctx.lineTo(CX + 28, CY + 93);
+  ctx.lineTo(CX + 18, CY + 87); ctx.lineTo(CX, CY + 108); ctx.lineTo(CX - 18, CY + 87);
+  ctx.closePath(); ctx.fill();
+  const lc = ctx.createLinearGradient(CX - 70, 0, CX - 18, 0);
+  lc.addColorStop(0, '#e0dff8'); lc.addColorStop(1, '#c8c7ee');
+  ctx.fillStyle = lc;
+  ctx.beginPath();
+  ctx.moveTo(CX - 65, CY + 87); ctx.lineTo(CX - 18, CY + 87);
+  ctx.lineTo(CX, CY + 130); ctx.lineTo(CX - 75, CY + 108); ctx.closePath(); ctx.fill();
+  const rc = ctx.createLinearGradient(CX + 18, 0, CX + 70, 0);
+  rc.addColorStop(0, '#c8c7ee'); rc.addColorStop(1, '#b8b7de');
+  ctx.fillStyle = rc;
+  ctx.beginPath();
+  ctx.moveTo(CX + 65, CY + 87); ctx.lineTo(CX + 18, CY + 87);
+  ctx.lineTo(CX, CY + 130); ctx.lineTo(CX + 75, CY + 108); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
+
 function drawNeck() {
   ctx.save();
-  const g=ctx.createLinearGradient(CX-22,0,CX+22,0);
-  g.addColorStop(0,'#f0c4a0'); g.addColorStop(0.4,'#ffd5b5'); g.addColorStop(1,'#e8b890');
-  ctx.fillStyle=g;
-  ctx.beginPath(); ctx.moveTo(CX-20,CY+62); ctx.lineTo(CX+20,CY+62);
-  ctx.lineTo(CX+22,CY+92); ctx.lineTo(CX-22,CY+92); ctx.closePath(); ctx.fill();
+  const g = ctx.createLinearGradient(CX - 22, 0, CX + 22, 0);
+  g.addColorStop(0, '#f0c4a0'); g.addColorStop(0.4, '#ffd5b5'); g.addColorStop(1, '#e8b890');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(CX - 20, CY + 62); ctx.lineTo(CX + 20, CY + 62);
+  ctx.lineTo(CX + 22, CY + 92); ctx.lineTo(CX - 22, CY + 92); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
+
 function drawFace() {
   ctx.save();
-  const g=ctx.createRadialGradient(CX-25,CY-25,5,CX,CY,105);
-  g.addColorStop(0,'#ffe0c2'); g.addColorStop(0.5,'#ffd0b0'); g.addColorStop(1,'#f0b898');
-  ctx.fillStyle=g;
-  ctx.beginPath(); ctx.ellipse(CX,CY,93,108,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#f5c5a2';
+  const g = ctx.createRadialGradient(CX - 25, CY - 25, 5, CX, CY, 105);
+  g.addColorStop(0, '#ffe0c2'); g.addColorStop(0.5, '#ffd0b0'); g.addColorStop(1, '#f0b898');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(CX, CY, 93, 108, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f5c5a2';
   ctx.beginPath();
-  ctx.moveTo(CX-70,CY+18);
-  ctx.quadraticCurveTo(CX-82,CY+65,CX,CY+108);
-  ctx.quadraticCurveTo(CX+82,CY+65,CX+70,CY+18);
-  ctx.quadraticCurveTo(CX,CY+35,CX-70,CY+18);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(CX - 70, CY + 18);
+  ctx.quadraticCurveTo(CX - 82, CY + 65, CX, CY + 108);
+  ctx.quadraticCurveTo(CX + 82, CY + 65, CX + 70, CY + 18);
+  ctx.quadraticCurveTo(CX, CY + 35, CX - 70, CY + 18); ctx.closePath(); ctx.fill();
   ctx.restore();
 }
+
 function drawEars() {
   ctx.save();
-  [[-90,-0.15],[90,0.15]].forEach(([ex,t]) => {
-    ctx.fillStyle='#f0c0a0';
-    ctx.beginPath(); ctx.ellipse(CX+ex,CY-5,13,17,t,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#e0a880';
-    ctx.beginPath(); ctx.ellipse(CX+ex,CY-3,7,11,t,0,Math.PI*2); ctx.fill();
+  [[-90, -0.15], [90, 0.15]].forEach(([ex, t]) => {
+    ctx.fillStyle = '#f0c0a0';
+    ctx.beginPath(); ctx.ellipse(CX + ex, CY - 5, 13, 17, t, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#e0a880';
+    ctx.beginPath(); ctx.ellipse(CX + ex, CY - 3, 7, 11, t, 0, Math.PI * 2); ctx.fill();
   });
   ctx.restore();
 }
+
 function drawHairBack() {
   ctx.save();
-  const g=ctx.createLinearGradient(CX,CY-120,CX,H);
-  g.addColorStop(0,'#7048c0'); g.addColorStop(0.4,'#5a35a8'); g.addColorStop(1,'#2d1a60');
-  ctx.fillStyle=g;
-  ctx.beginPath(); ctx.ellipse(CX,CY-28,103,113,0,0,Math.PI*2); ctx.fill();
-  // left strand
+  const g = ctx.createLinearGradient(CX, CY - 120, CX, H);
+  g.addColorStop(0, '#7048c0'); g.addColorStop(0.4, '#5a35a8'); g.addColorStop(1, '#2d1a60');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(CX, CY - 28, 103, 113, 0, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath();
-  ctx.moveTo(CX-82,CY-18);
-  ctx.bezierCurveTo(CX-130,CY+60,CX-120,CY+160,CX-95,H-20);
-  ctx.lineTo(CX-60,H-20);
-  ctx.bezierCurveTo(CX-90,CY+160,CX-100,CY+60,CX-52,CY-8);
+  ctx.moveTo(CX - 82, CY - 18);
+  ctx.bezierCurveTo(CX - 130, CY + 60, CX - 120, CY + 160, CX - 95, H - 20);
+  ctx.lineTo(CX - 60, H - 20);
+  ctx.bezierCurveTo(CX - 90, CY + 160, CX - 100, CY + 60, CX - 52, CY - 8);
   ctx.closePath(); ctx.fill();
-  // right strand
   ctx.beginPath();
-  ctx.moveTo(CX+82,CY-18);
-  ctx.bezierCurveTo(CX+130,CY+60,CX+120,CY+160,CX+95,H-20);
-  ctx.lineTo(CX+60,H-20);
-  ctx.bezierCurveTo(CX+90,CY+160,CX+100,CY+60,CX+52,CY-8);
+  ctx.moveTo(CX + 82, CY - 18);
+  ctx.bezierCurveTo(CX + 130, CY + 60, CX + 120, CY + 160, CX + 95, H - 20);
+  ctx.lineTo(CX + 60, H - 20);
+  ctx.bezierCurveTo(CX + 90, CY + 160, CX + 100, CY + 60, CX + 52, CY - 8);
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
+
 function drawHairFront() {
   ctx.save();
-  const g=ctx.createLinearGradient(CX,CY-130,CX,CY-10);
-  g.addColorStop(0,'#8855d0'); g.addColorStop(1,'#6040b8');
-  ctx.fillStyle=g;
+  const g = ctx.createLinearGradient(CX, CY - 130, CX, CY - 10);
+  g.addColorStop(0, '#8855d0'); g.addColorStop(1, '#6040b8');
+  ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(CX-100,CY-48);
-  ctx.bezierCurveTo(CX-95,CY-132,CX-10,CY-142,CX,CY-142);
-  ctx.bezierCurveTo(CX+10,CY-142,CX+95,CY-132,CX+100,CY-48);
-  ctx.bezierCurveTo(CX+75,CY-38,CX+45,CY-16,CX+25,CY-42);
-  ctx.bezierCurveTo(CX+18,CY-30,CX+8,CY-26,CX,CY-38);
-  ctx.bezierCurveTo(CX-8,CY-26,CX-18,CY-30,CX-25,CY-42);
-  ctx.bezierCurveTo(CX-45,CY-16,CX-75,CY-38,CX-100,CY-48);
+  ctx.moveTo(CX - 100, CY - 48);
+  ctx.bezierCurveTo(CX - 95, CY - 132, CX - 10, CY - 142, CX, CY - 142);
+  ctx.bezierCurveTo(CX + 10, CY - 142, CX + 95, CY - 132, CX + 100, CY - 48);
+  ctx.bezierCurveTo(CX + 75, CY - 38, CX + 45, CY - 16, CX + 25, CY - 42);
+  ctx.bezierCurveTo(CX + 18, CY - 30, CX + 8, CY - 26, CX, CY - 38);
+  ctx.bezierCurveTo(CX - 8, CY - 26, CX - 18, CY - 30, CX - 25, CY - 42);
+  ctx.bezierCurveTo(CX - 45, CY - 16, CX - 75, CY - 38, CX - 100, CY - 48);
   ctx.closePath(); ctx.fill();
-  // highlight
-  ctx.fillStyle='rgba(180,140,255,0.4)';
-  ctx.beginPath(); ctx.ellipse(CX-18,CY-100,12,28,-0.25,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(CX+32,CY-95,8,18,0.3,0,Math.PI*2); ctx.fill();
-  // side tufts
-  ctx.fillStyle='#7a4cbe';
-  ctx.beginPath(); ctx.moveTo(CX-88,CY-28);
-  ctx.bezierCurveTo(CX-115,CY+5,CX-108,CY+45,CX-90,CY+52);
-  ctx.bezierCurveTo(CX-75,CY+58,CX-68,CY+30,CX-72,CY-20); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(CX+88,CY-28);
-  ctx.bezierCurveTo(CX+115,CY+5,CX+108,CY+45,CX+90,CY+52);
-  ctx.bezierCurveTo(CX+75,CY+58,CX+68,CY+30,CX+72,CY-20); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(180,140,255,0.38)';
+  ctx.beginPath(); ctx.ellipse(CX - 18, CY - 100, 12, 28, -0.25, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(CX + 32, CY - 95, 8, 18, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#7a4cbe';
+  ctx.beginPath();
+  ctx.moveTo(CX - 88, CY - 28);
+  ctx.bezierCurveTo(CX - 115, CY + 5, CX - 108, CY + 45, CX - 90, CY + 52);
+  ctx.bezierCurveTo(CX - 75, CY + 58, CX - 68, CY + 30, CX - 72, CY - 20);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(CX + 88, CY - 28);
+  ctx.bezierCurveTo(CX + 115, CY + 5, CX + 108, CY + 45, CX + 90, CY + 52);
+  ctx.bezierCurveTo(CX + 75, CY + 58, CX + 68, CY + 30, CX + 72, CY - 20);
+  ctx.closePath(); ctx.fill();
   ctx.restore();
 }
-function drawHairAccessory() {
+
+function drawAccessory() {
   ctx.save();
-  ctx.fillStyle='#fbbf24'; ctx.shadowColor='#f59e0b'; ctx.shadowBlur=8;
-  ctx.translate(CX+58,CY-78);
+  ctx.fillStyle = '#fbbf24'; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 8;
+  ctx.translate(CX + 58, CY - 78);
   ctx.beginPath();
-  for(let i=0;i<10;i++){
-    const r=i%2===0?11:5, a=(i*Math.PI)/5-Math.PI/2;
-    i===0?ctx.moveTo(r*Math.cos(a),r*Math.sin(a)):ctx.lineTo(r*Math.cos(a),r*Math.sin(a));
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 === 0 ? 11 : 5, a = (i * Math.PI) / 5 - Math.PI / 2;
+    i === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a)) : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
   }
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
+
 function drawEyebrows() {
   ctx.save();
-  const browY=CY-48;
-  ctx.strokeStyle='#4a2888'; ctx.lineWidth=3.5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(CX-52,browY+4); ctx.quadraticCurveTo(CX-34,browY-4,CX-16,browY+1); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(CX+16,browY+1); ctx.quadraticCurveTo(CX+34,browY-4,CX+52,browY+4); ctx.stroke();
+  const browY = CY - 48;
+  ctx.strokeStyle = '#4a2888'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(CX - 50, browY + 4); ctx.quadraticCurveTo(CX - 32, browY - 4, CX - 14, browY + 1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX + 14, browY + 1); ctx.quadraticCurveTo(CX + 32, browY - 4, CX + 50, browY + 4); ctx.stroke();
   ctx.restore();
 }
+
 function drawEyes() {
   ctx.save();
-  const blink=state.blink, eyeY=CY-15, glX=state.glanceX;
-  [-1,1].forEach(side=>{
-    const ex=CX+side*33;
-    const sy=1-blink;
-    ctx.save(); ctx.translate(ex,eyeY); ctx.scale(1,sy);
-    ctx.fillStyle='#fff';
-    ctx.beginPath(); ctx.ellipse(0,0,20,22,0,0,Math.PI*2); ctx.fill();
-    const sh=ctx.createLinearGradient(0,-22,0,5);
-    sh.addColorStop(0,'rgba(150,100,220,0.4)'); sh.addColorStop(1,'transparent');
-    ctx.fillStyle=sh;
-    ctx.beginPath(); ctx.ellipse(0,-4,20,18,0,0,Math.PI*2); ctx.fill();
-    const ig=ctx.createRadialGradient(glX*4-3,-5,1,glX*4,0,14);
-    ig.addColorStop(0,'#8dd4f8'); ig.addColorStop(0.35,'#4a96e8');
-    ig.addColorStop(0.7,'#2a6ab8'); ig.addColorStop(1,'#153d80');
-    ctx.fillStyle=ig;
-    ctx.beginPath(); ctx.ellipse(glX*4,0,13,16,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#08152a';
-    ctx.beginPath(); ctx.ellipse(glX*4+1,1,6,8,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.95)';
-    ctx.beginPath(); ctx.ellipse(glX*4-4,-6,4,4,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.55)';
-    ctx.beginPath(); ctx.ellipse(glX*4+5,3,2.5,2.5,0,0,Math.PI*2); ctx.fill();
+  const blink = st.blink, eyeY = CY - 16, gx = st.glanceX;
+  [-1, 1].forEach(side => {
+    const ex = CX + side * 30;
+    const sy = 1 - blink;
+    ctx.save(); ctx.translate(ex, eyeY); ctx.scale(1, sy);
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.ellipse(0, 0, 20, 22, 0, 0, Math.PI * 2); ctx.fill();
+    const sh = ctx.createLinearGradient(0, -22, 0, 5);
+    sh.addColorStop(0, 'rgba(150,100,220,0.38)'); sh.addColorStop(1, 'transparent');
+    ctx.fillStyle = sh; ctx.beginPath(); ctx.ellipse(0, -4, 20, 18, 0, 0, Math.PI * 2); ctx.fill();
+    const ig = ctx.createRadialGradient(gx * 4 - 3, -5, 1, gx * 4, 0, 14);
+    ig.addColorStop(0, '#8dd4f8'); ig.addColorStop(0.35, '#4a96e8');
+    ig.addColorStop(0.7, '#2a6ab8'); ig.addColorStop(1, '#153d80');
+    ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(gx * 4, 0, 13, 16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#08152a'; ctx.beginPath(); ctx.ellipse(gx * 4 + 1, 1, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.ellipse(gx * 4 - 4, -6, 4, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.ellipse(gx * 4 + 5, 3, 2.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    // lashes
-    if(blink<0.6){
-      ctx.save(); ctx.strokeStyle='#1a0530'; ctx.lineWidth=2; ctx.lineCap='round';
-      const ly=eyeY-22*(1-blink);
-      for(let i=-3;i<=3;i++){
-        const lx=ex+i*5.5;
-        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx+i*1.2,ly-5-Math.abs(i)*0.5); ctx.stroke();
+
+    if (blink < 0.6) {
+      ctx.save(); ctx.strokeStyle = '#1a0530'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+      const ly = eyeY - 22 * (1 - blink);
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath(); ctx.moveTo(ex + i * 5.5, ly); ctx.lineTo(ex + i * 6.2, ly - 5 - Math.abs(i) * 0.5); ctx.stroke();
       }
       ctx.restore();
     }
-    // blink overlay
-    if(blink>0.05){
+    if (blink > 0.05) {
       ctx.save();
-      ctx.beginPath(); ctx.rect(ex-26,eyeY-28,52,28+24*blink); ctx.clip();
-      ctx.fillStyle='#ffd0b0';
-      ctx.beginPath(); ctx.ellipse(ex,eyeY,24,26,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.rect(ex - 26, eyeY - 28, 52, 28 + 24 * blink); ctx.clip();
+      ctx.fillStyle = '#ffd0b0'; ctx.beginPath(); ctx.ellipse(ex, eyeY, 24, 26, 0, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
   });
   ctx.restore();
 }
+
 function drawNose() {
   ctx.save();
-  ctx.strokeStyle='#cc8866'; ctx.lineWidth=1.5; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(CX-6,CY+20);
-  ctx.quadraticCurveTo(CX-4,CY+25,CX,CY+24);
-  ctx.quadraticCurveTo(CX+4,CY+25,CX+6,CY+20); ctx.stroke();
+  ctx.strokeStyle = '#cc8866'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(CX - 6, CY + 20); ctx.quadraticCurveTo(CX - 4, CY + 25, CX, CY + 24);
+  ctx.quadraticCurveTo(CX + 4, CY + 25, CX + 6, CY + 20); ctx.stroke();
   ctx.restore();
 }
+
+/* ── MOUTH — 2-axis viseme system ── */
 function drawMouth() {
   ctx.save();
-  const open=state.mouthOpen, my=CY+50;
-  if(open>0.04){
-    const mw=20+open*14, mh=open*20;
-    ctx.fillStyle='#1a0510';
-    ctx.beginPath(); ctx.ellipse(CX,my+mh*0.35,mw,Math.max(mh,2),0,0,Math.PI*2); ctx.fill();
-    if(open>0.15){
-      const th=Math.min(open*14,10);
-      ctx.fillStyle='#fff8f6';
-      ctx.beginPath(); ctx.ellipse(CX,my-1,mw-3,th,0,Math.PI,2*Math.PI); ctx.fill();
+  const open = st.open;   // 0–1  jaw drop
+  const wide = st.wide;   // 0–1  lip stretch (0=pursed O/U, 1=wide A/E/I)
+  const my = CY + 52;
+
+  // Lip corner positions depend on wide
+  const cornerX = 22 + wide * 8;   // wider for A/E/I, narrower for O/U
+  const lipRaise = open * (3 + wide * 3); // upper lip rises more for wide vowels
+
+  // Upper lip Y (rises when open)
+  const ulY = my - lipRaise;
+  // Lower lip Y (drops)
+  const llY = my + open * 18;
+
+  // ── Interior cavity ──
+  if (open > 0.03) {
+    const cavW = cornerX - 2 + open * 2;
+    const cavH = Math.max((llY - ulY) * 0.55, 1);
+
+    ctx.fillStyle = '#160410';
+    ctx.beginPath();
+    ctx.ellipse(CX, ulY + (llY - ulY) * 0.45, cavW, cavH, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Upper teeth — more visible for wide vowels
+    if (open > 0.08) {
+      const tw = cavW - 1;
+      const th = Math.min(open * 10 + wide * 6, 12);
+      ctx.fillStyle = '#fffaf8';
+      ctx.beginPath();
+      ctx.ellipse(CX, ulY + 1, tw, th, 0, Math.PI, 2 * Math.PI);
+      ctx.fill();
+      // Tooth dividers for wide
+      if (th > 5 && wide > 0.4) {
+        ctx.strokeStyle = 'rgba(190,175,180,0.4)';
+        ctx.lineWidth = 0.7;
+        [-tw * 0.38, 0, tw * 0.38].forEach(ox => {
+          ctx.beginPath(); ctx.moveTo(CX + ox, ulY + 1); ctx.lineTo(CX + ox, ulY + 1 - th * 0.8); ctx.stroke();
+        });
+      }
     }
-    if(open>0.35){
-      const lh=Math.min((open-0.35)*10,7);
-      ctx.fillStyle='#f8f0f2';
-      ctx.beginPath(); ctx.ellipse(CX,my+mh*0.7,mw-5,lh,0,0,Math.PI); ctx.fill();
+
+    // Lower teeth — only when open + somewhat wide
+    if (open > 0.32 && wide > 0.25) {
+      const lh = Math.min((open - 0.32) * 14, 9);
+      ctx.fillStyle = '#f5eff2';
+      ctx.beginPath();
+      ctx.ellipse(CX, llY * 0.55 + ulY * 0.45 + cavH * 0.6, cavW - 5, lh, 0, 0, Math.PI);
+      ctx.fill();
     }
-    if(open>0.55){
-      const ta=(open-0.55)/0.45;
-      ctx.fillStyle=`rgba(228,100,110,${ta*0.9})`;
-      ctx.beginPath(); ctx.ellipse(CX,my+mh-4,mw*0.5*ta,mh*0.35*ta,0,0,Math.PI); ctx.fill();
+
+    // Tongue — deep open
+    if (open > 0.55) {
+      const ta = Math.min((open - 0.55) / 0.45, 1);
+      ctx.fillStyle = `rgba(218, 82, 95, ${ta * 0.88})`;
+      ctx.beginPath();
+      ctx.ellipse(CX, ulY + (llY - ulY) * 0.75,
+        (cavW - 5) * ta * (0.7 + wide * 0.3),
+        cavH * 0.42 * ta, 0, 0, Math.PI);
+      ctx.fill();
     }
   }
-  const ls=open*5;
-  ctx.fillStyle='#c85575';
+
+  // ── Upper lip ──
+  ctx.fillStyle = '#bf4060';
   ctx.beginPath();
-  ctx.moveTo(CX-26,my-ls);
-  ctx.bezierCurveTo(CX-14,my-9-ls,CX-5,my-6-ls,CX,my-10-ls);
-  ctx.bezierCurveTo(CX+5,my-6-ls,CX+14,my-9-ls,CX+26,my-ls);
-  ctx.bezierCurveTo(CX+16,my-1-ls,CX,my-ls,CX-16,my-1-ls);
+  ctx.moveTo(CX - cornerX, ulY + 2);
+  // Left → left peak
+  ctx.bezierCurveTo(CX - cornerX * 0.65, ulY - 5, CX - cornerX * 0.28, ulY - 4, CX - 4, ulY - 7 - open * 2);
+  // Cupid's bow dip
+  ctx.bezierCurveTo(CX - 1.5, ulY - 4, CX + 1.5, ulY - 4, CX + 4, ulY - 7 - open * 2);
+  // Right peak → right corner
+  ctx.bezierCurveTo(CX + cornerX * 0.28, ulY - 4, CX + cornerX * 0.65, ulY - 5, CX + cornerX, ulY + 2);
+  // Lower edge back
+  ctx.bezierCurveTo(CX + cornerX * 0.5, ulY + 1, CX, ulY + 1.5, CX - cornerX * 0.5, ulY + 1);
   ctx.closePath(); ctx.fill();
-  const by=my+open*16;
-  ctx.fillStyle='#d86585';
+
+  // ── Lower lip ──
+  ctx.fillStyle = '#cf6080';
   ctx.beginPath();
-  ctx.moveTo(CX-26,my-ls);
-  ctx.bezierCurveTo(CX-14,my+8+open*14,CX+14,my+8+open*14,CX+26,my-ls);
-  ctx.bezierCurveTo(CX+20,by+9,CX,by+12,CX-20,by+9); ctx.closePath(); ctx.fill();
-  ctx.fillStyle='rgba(255,200,215,0.4)';
-  ctx.beginPath(); ctx.ellipse(CX+4,by+7,9,3.5,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#b84468';
-  [-26,26].forEach(ox=>{ctx.beginPath();ctx.arc(CX+ox,my-ls+1,2,0,Math.PI*2);ctx.fill();});
+  ctx.moveTo(CX - cornerX, ulY + 2);
+  // Drop down
+  ctx.bezierCurveTo(
+    CX - cornerX * 0.5, ulY + 8 + open * 14,
+    CX + cornerX * 0.5, ulY + 8 + open * 14,
+    CX + cornerX, ulY + 2
+  );
+  // Bottom curve
+  ctx.bezierCurveTo(CX + cornerX * 0.6, llY + 9, CX, llY + 12, CX - cornerX * 0.6, llY + 9);
+  ctx.closePath(); ctx.fill();
+
+  // Lower lip highlight
+  ctx.fillStyle = 'rgba(255, 195, 210, 0.42)';
+  ctx.beginPath(); ctx.ellipse(CX + 3, llY + 7, 9 + wide * 4, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Corner dots
+  ctx.fillStyle = '#aa3555';
+  [-cornerX, cornerX].forEach(ox => {
+    ctx.beginPath(); ctx.arc(CX + ox, ulY + 2, 2.2, 0, Math.PI * 2); ctx.fill();
+  });
+
   ctx.restore();
 }
+
 function drawCheeks() {
   ctx.save();
-  const a=state.cheekAlpha;
-  [-55,55].forEach(ox=>{
-    const g=ctx.createRadialGradient(CX+ox,CY+22,0,CX+ox,CY+22,28);
-    g.addColorStop(0,`rgba(255,140,165,${a})`); g.addColorStop(1,'transparent');
-    ctx.fillStyle=g;
-    ctx.beginPath(); ctx.ellipse(CX+ox,CY+22,28,17,0,0,Math.PI*2); ctx.fill();
+  const a = st.cheekAlpha;
+  [-55, 55].forEach(ox => {
+    const g = ctx.createRadialGradient(CX + ox, CY + 22, 0, CX + ox, CY + 22, 28);
+    g.addColorStop(0, `rgba(255,140,165,${a})`); g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(CX + ox, CY + 22, 28, 17, 0, 0, Math.PI * 2); ctx.fill();
   });
   ctx.restore();
 }
 
-// ══════════════════════════════
+// ════════════════════════════════════════
 //  ANIMATION LOOP
-// ══════════════════════════════
-let lastTs=0, visemeTimer=0;
+// ════════════════════════════════════════
+let lastTs = 0;
 
 function loop(ts) {
-  const dt=Math.min(ts-lastTs,50); lastTs=ts;
-  state.breathTimer += dt*0.0008;
-  state.bobTimer    += dt*0.0018*(state.speaking?1.8:0.6);
-  state.blinkTimer  -= dt;
-  if(state.blinkTimer<=0&&!state.blinking){ state.blinkTimer=1800+Math.random()*3500; doBlink(); }
-  state.glanceTimer -= dt;
-  if(state.glanceTimer<=0){ state.glanceTimer=2000+Math.random()*4000; state.glanceX=(Math.random()-0.5)*2; }
+  const dt = Math.min(ts - lastTs, 50); lastTs = ts;
+  st.breathTimer += dt * 0.0008;
+  st.bobTimer    += dt * 0.0017 * (st.speaking ? 1.8 : 0.6);
+  st.blinkTimer  -= dt;
+  if (st.blinkTimer <= 0 && !st.blinking) { st.blinkTimer = 1800 + Math.random() * 3500; doBlink(); }
+  st.glanceTimer -= dt;
+  if (st.glanceTimer <= 0) { st.glanceTimer = 2200 + Math.random() * 4000; st.glanceX = (Math.random() - 0.5) * 1.8; }
 
-  // TTS mouth simulation
-  if(state.speaking && !liveCapturing) {
-    visemeTimer-=dt;
-    if(visemeTimer<=0){
-      visemeTimer=55+Math.random()*70;
-      const opts=[0.1,0.25,0.45,0.65,0.85,0.5,0.3,0.7,0.15,0.9];
-      state.mouthTarget=opts[Math.floor(Math.random()*opts.length)];
-    }
-  } else if(!liveCapturing) {
-    state.mouthTarget=0;
-  }
+  // Mouth smoothing: fast attack, slow release (more natural)
+  const attackRate  = dt * 0.018;
+  const releaseRate = dt * 0.009;
+  const openRate  = st.openTarget  > st.open  ? attackRate : releaseRate;
+  const wideRate  = st.wideTarget  > st.wide  ? attackRate : releaseRate * 1.2;
+  st.open = lerp(st.open, st.openTarget, openRate);
+  st.wide = lerp(st.wide, st.wideTarget, wideRate);
 
-  state.mouthOpen   = lerp(state.mouthOpen, state.mouthTarget, dt*0.014);
-  state.cheekAlpha  = lerp(state.cheekAlpha, state.speaking||liveCapturing?0.52:0.28, dt*0.004);
+  st.cheekAlpha = lerp(st.cheekAlpha, st.speaking || liveCapturing ? 0.52 : 0.28, dt * 0.004);
+
   render();
   requestAnimationFrame(loop);
 }
-function doBlink(){
-  state.blinking=true;
-  const dur=130, start=performance.now();
-  function step(t){
-    const p=(t-start)/dur;
-    state.blink=p<0.5?easeOut(p*2):easeOut((1-p)*2);
-    if(p<1) requestAnimationFrame(step);
-    else { state.blink=0; state.blinking=false; }
+
+function doBlink() {
+  st.blinking = true;
+  const dur = 130, start = performance.now();
+  function step(t) {
+    const p = (t - start) / dur;
+    st.blink = p < 0.5 ? easeOut(p * 2) : easeOut((1 - p) * 2);
+    if (p < 1) requestAnimationFrame(step);
+    else { st.blink = 0; st.blinking = false; }
   }
   requestAnimationFrame(step);
 }
 requestAnimationFrame(loop);
 
-// ══════════════════════════════
+// ════════════════════════════════════════
+//  VISEME MAPPING
+// ════════════════════════════════════════
+// Returns {open, wide} for a character
+function charToViseme(ch) {
+  const code = ch.charCodeAt(0);
+
+  // Korean syllable block
+  if (code >= 0xAC00 && code <= 0xD7A3) {
+    const j = Math.floor((code - 0xAC00) / 28) % 21;
+    //    ㅏ       ㅐ       ㅑ       ㅒ       ㅓ       ㅔ       ㅕ       ㅖ
+    //    ㅗ       ㅘ       ㅙ       ㅚ       ㅛ       ㅜ       ㅝ       ㅞ
+    //    ㅟ       ㅠ       ㅡ       ㅢ       ㅣ
+    const map = [
+      {open:0.80,wide:0.85}, {open:0.50,wide:0.90}, {open:0.75,wide:0.82}, {open:0.45,wide:0.88},
+      {open:0.55,wide:0.50}, {open:0.48,wide:0.82}, {open:0.50,wide:0.52}, {open:0.44,wide:0.80},
+      {open:0.52,wide:0.20}, {open:0.68,wide:0.62}, {open:0.48,wide:0.70}, {open:0.44,wide:0.60},
+      {open:0.48,wide:0.22}, {open:0.38,wide:0.12}, {open:0.44,wide:0.42}, {open:0.40,wide:0.60},
+      {open:0.34,wide:0.30}, {open:0.36,wide:0.14}, {open:0.20,wide:0.60}, {open:0.28,wide:0.70},
+      {open:0.32,wide:0.92},
+    ];
+    return map[j] || {open:0.14, wide:0.55};
+  }
+
+  // Latin vowels
+  switch (ch.toLowerCase()) {
+    case 'a': return {open:0.78, wide:0.85};
+    case 'e': return {open:0.48, wide:0.88};
+    case 'i': return {open:0.28, wide:0.95};
+    case 'o': return {open:0.52, wide:0.18};
+    case 'u': return {open:0.36, wide:0.10};
+  }
+
+  // Consonant / space
+  if (/\s/.test(ch)) return null;
+  return {open:0.12, wide:0.52};
+}
+
+// ════════════════════════════════════════
 //  TTS
-// ══════════════════════════════
-const synth=window.speechSynthesis;
-let utt=null;
+// ════════════════════════════════════════
+const synth = window.speechSynthesis;
+let utt = null, visemeTimer = null;
 
-function loadVoices(){
-  const sel=document.getElementById('voice-select');
-  const voices=synth.getVoices();
-  if(!voices.length){ setTimeout(loadVoices,300); return; }
-  sel.innerHTML='';
-  voices.forEach((v,i)=>{
-    const opt=document.createElement('option');
-    opt.value=i; opt.textContent=`${v.name} (${v.lang})`; sel.appendChild(opt);
+function loadVoices() {
+  const sel = document.getElementById('voice-select');
+  const voices = synth.getVoices();
+  if (!voices.length) { setTimeout(loadVoices, 300); return; }
+  sel.innerHTML = '';
+  voices.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = `${v.name} (${v.lang})`; sel.appendChild(opt);
   });
-  const ko=voices.findIndex(v=>v.lang.startsWith('ko'));
-  if(ko>=0) sel.value=ko;
-  else { const en=voices.findIndex(v=>v.lang.startsWith('en')); if(en>=0) sel.value=en; }
+  const ko = voices.findIndex(v => v.lang.startsWith('ko'));
+  if (ko >= 0) sel.value = ko;
+  else { const en = voices.findIndex(v => v.lang.startsWith('en')); if (en >= 0) sel.value = en; }
 }
-synth.onvoiceschanged=loadVoices; loadVoices();
+synth.onvoiceschanged = loadVoices; loadVoices();
 
-function setTTSStatus(text,mode){
-  document.getElementById('tts-status').textContent=text;
-  const d=document.getElementById('tts-dot'); d.className='dot '+(mode||'');
-  document.getElementById('speak-btn').className='btn-primary'+(mode==='speaking'?' active-speak':'');
+function setTTSStatus(text, mode) {
+  document.getElementById('tts-status').textContent = text;
+  document.getElementById('tts-dot').className = 'dot ' + (mode || '');
+  document.getElementById('speak-btn').className = 'btn-primary' + (mode === 'speaking' ? ' speaking' : '');
 }
-function speak(){
-  if(synth.speaking) synth.cancel();
-  const text=document.getElementById('text-input').value.trim();
-  if(!text) return;
-  utt=new SpeechSynthesisUtterance(text);
-  const voices=synth.getVoices();
-  const vi=parseInt(document.getElementById('voice-select').value);
-  if(!isNaN(vi)&&voices[vi]) utt.voice=voices[vi];
-  utt.rate=parseFloat(document.getElementById('speed-select').value);
-  utt.pitch=parseFloat(document.getElementById('pitch-select').value);
-  utt.onstart=()=>{ state.speaking=true; setTTSStatus('말하는 중...','speaking'); };
-  utt.onend=()=>{ state.speaking=false; state.mouthTarget=0; setTTSStatus('완료 ✓',''); setTimeout(()=>setTTSStatus('준비됨 — Ctrl+Enter로 말하기',''),2000); };
-  utt.onerror=()=>{ state.speaking=false; setTTSStatus('오류 발생','error'); };
+
+function speak() {
+  if (synth.speaking) synth.cancel();
+  clearVisemeSchedule();
+  const text = document.getElementById('text-input').value.trim();
+  if (!text) return;
+
+  utt = new SpeechSynthesisUtterance(text);
+  const voices = synth.getVoices();
+  const vi = parseInt(document.getElementById('voice-select').value);
+  if (!isNaN(vi) && voices[vi]) utt.voice = voices[vi];
+  utt.rate  = parseFloat(document.getElementById('speed-select').value);
+  utt.pitch = parseFloat(document.getElementById('pitch-select').value);
+
+  utt.onstart = () => {
+    st.speaking = true;
+    setTTSStatus('말하는 중...', 'speaking');
+    scheduleVisemes(text, utt.rate);
+  };
+  utt.onend = () => {
+    st.speaking = false;
+    st.openTarget = 0; st.wideTarget = 0.5;
+    clearVisemeSchedule();
+    setTTSStatus('완료 ✓', '');
+    setTimeout(() => setTTSStatus('준비됨 — Ctrl+Enter로 말하기', ''), 2000);
+  };
+  utt.onerror = () => { st.speaking = false; clearVisemeSchedule(); setTTSStatus('오류 발생', 'error'); };
   synth.speak(utt);
 }
-function stopTTS(){
-  synth.cancel(); state.speaking=false; state.mouthTarget=0; setTTSStatus('멈춤','');
-}
-document.getElementById('text-input').addEventListener('keydown',e=>{ if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();speak();} });
 
-// ══════════════════════════════
+function scheduleVisemes(text, rate) {
+  // Estimate ~5.5 chars/sec at rate=1.0
+  const msPerChar = 1000 / (rate * 5.5);
+  const frames = [];
+  let t = 60; // small start delay
+  for (const ch of text) {
+    const v = charToViseme(ch);
+    if (v) frames.push({ at: t, ...v });
+    t += /\s/.test(ch) ? msPerChar * 0.4 : msPerChar;
+  }
+
+  const startTime = Date.now();
+  let idx = 0;
+  visemeTimer = setInterval(() => {
+    if (!st.speaking || idx >= frames.length) { clearVisemeSchedule(); return; }
+    const now = Date.now() - startTime;
+    while (idx < frames.length && frames[idx].at <= now) {
+      st.openTarget = frames[idx].open;
+      st.wideTarget = frames[idx].wide;
+      idx++;
+    }
+  }, 16);
+}
+
+function clearVisemeSchedule() {
+  if (visemeTimer) { clearInterval(visemeTimer); visemeTimer = null; }
+}
+
+function stopTTS() {
+  synth.cancel(); st.speaking = false;
+  st.openTarget = 0; st.wideTarget = 0.5;
+  clearVisemeSchedule();
+  setTTSStatus('멈춤', '');
+}
+
+document.getElementById('text-input').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); speak(); }
+});
+
+// ════════════════════════════════════════
 //  LIVE AUDIO CAPTURE
-// ══════════════════════════════
-let liveCapturing = false;
-let currentMethod = 'mic'; // 'mic' | 'screen'
-let audioCtx = null, analyser = null, freqData = null;
-let captureStream = null, animFrameId = null;
+// ════════════════════════════════════════
+let liveCapturing  = false;
+let currentMethod  = 'mic';
+let audioCtx2 = null, analyser2 = null, freqData2 = null;
+let captureStream  = null, liveRafId = null;
+let envOpen = 0, envWide = 0.5; // smoothed envelope
+
 const freqCanvas = document.getElementById('freq-canvas');
-const freqCtx = freqCanvas.getContext('2d');
-const levelBar = document.getElementById('level-bar');
+const freqCtx    = freqCanvas.getContext('2d');
+const levelBar   = document.getElementById('level-bar');
 const levelBarWrap = document.getElementById('level-bar-wrap');
 
-document.getElementById('sensitivity').addEventListener('input', function(){
+document.getElementById('sensitivity').addEventListener('input', function () {
   document.getElementById('sens-val').textContent = this.value;
 });
 
@@ -745,26 +765,25 @@ function switchMethod(m) {
   document.getElementById('mtab-screen').classList.toggle('active', m === 'screen');
   document.getElementById('method-mic').style.display    = m === 'mic'    ? '' : 'none';
   document.getElementById('method-screen').style.display = m === 'screen' ? '' : 'none';
-  const btn = document.getElementById('live-btn');
-  btn.textContent = m === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
-  btn.className = 'btn-live';
+  document.getElementById('live-btn').textContent = m === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
+  document.getElementById('live-btn').className = 'btn-live';
   setLiveStatus('대기 중', '');
 }
 
 async function refreshMics() {
   try {
-    // Need at least one permission grant to enumerate labels
-    await navigator.mediaDevices.getUserMedia({ audio: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(()=>{});
+    await navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(s => s.getTracks().forEach(t => t.stop())).catch(() => {});
     const devices = await navigator.mediaDevices.enumerateDevices();
     const sel = document.getElementById('mic-select');
     sel.innerHTML = '';
     devices.filter(d => d.kind === 'audioinput').forEach(d => {
       const opt = document.createElement('option');
       opt.value = d.deviceId;
-      opt.textContent = d.label || '마이크 ' + d.deviceId.slice(0,6);
+      opt.textContent = d.label || '마이크 ' + d.deviceId.slice(0, 6);
       sel.appendChild(opt);
     });
-  } catch(e) { console.warn(e); }
+  } catch (e) { console.warn(e); }
 }
 refreshMics();
 
@@ -779,105 +798,128 @@ async function toggleCapture() {
   else await startScreenCapture();
 }
 
-// ── Mic input ──
 async function startMicCapture() {
   setLiveStatus('마이크 권한 요청 중...', '');
   try {
     const deviceId = document.getElementById('mic-select').value;
-    const constraints = {
+    captureStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         deviceId: deviceId ? { exact: deviceId } : undefined,
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false,
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false,
       }
-    };
-    captureStream = await navigator.mediaDevices.getUserMedia(constraints);
+    });
     setupAnalyser(captureStream);
     setCapturingUI('🎤 마이크 캡처 중 — AI 소리에 맞춰 입이 움직입니다', '🎤 캡처 중지');
     captureStream.getAudioTracks()[0].onended = () => stopCapture();
-  } catch(e) {
-    if (e.name === 'NotAllowedError') setLiveStatus('❌ 마이크 권한이 거부되었습니다', 'error');
-    else setLiveStatus('오류: ' + e.message, 'error');
+  } catch (e) {
+    setLiveStatus(e.name === 'NotAllowedError' ? '❌ 마이크 권한 거부' : '오류: ' + e.message, 'error');
   }
 }
 
-// ── Screen share ──
 async function startScreenCapture() {
-  setLiveStatus('화면 공유 창 대기 중 (AI 창을 선택하세요)...', '');
+  setLiveStatus('화면 공유 창 대기 중...', '');
   try {
     captureStream = await navigator.mediaDevices.getDisplayMedia({
       video: { width: 1, height: 1, frameRate: 1 },
       audio: { echoCancellation: false, noiseSuppression: false, sampleRate: 44100 }
     });
     if (captureStream.getAudioTracks().length === 0) {
-      setLiveStatus('⚠️ 오디오 없음 — "시스템 오디오 공유" 체크 후 다시 시도', 'error');
-      captureStream.getTracks().forEach(t => t.stop());
-      captureStream = null;
-      return;
+      setLiveStatus('⚠️ 오디오 없음 — "시스템 오디오 공유" 체크 후 재시도', 'error');
+      captureStream.getTracks().forEach(t => t.stop()); captureStream = null; return;
     }
     captureStream.getVideoTracks().forEach(t => t.stop());
     setupAnalyser(captureStream);
-    setCapturingUI('🖥️ 화면 공유 캡처 중 — AI 소리에 맞춰 입이 움직입니다', '⏹ 캡처 중지');
+    setCapturingUI('🖥️ 화면 공유 캡처 중', '⏹ 캡처 중지');
     captureStream.getAudioTracks()[0].onended = () => stopCapture();
-  } catch(e) {
-    if (e.name === 'NotAllowedError') setLiveStatus('공유가 취소되었습니다', '');
-    else setLiveStatus('오류: ' + e.message, 'error');
+  } catch (e) {
+    setLiveStatus(e.name === 'NotAllowedError' ? '공유가 취소됨' : '오류: ' + e.message, e.name === 'NotAllowedError' ? '' : 'error');
   }
 }
 
 function setupAnalyser(stream) {
-  audioCtx = new AudioContext();
-  const source = audioCtx.createMediaStreamSource(stream);
-  analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 2048;
-  analyser.smoothingTimeConstant = 0.78;
-  source.connect(analyser);
-  freqData = new Uint8Array(analyser.frequencyBinCount);
+  audioCtx2 = new AudioContext();
+  const src = audioCtx2.createMediaStreamSource(stream);
+  analyser2 = audioCtx2.createAnalyser();
+  analyser2.fftSize = 2048;
+  analyser2.smoothingTimeConstant = 0.82;
+  src.connect(analyser2);
+  freqData2 = new Uint8Array(analyser2.frequencyBinCount);
   liveCapturing = true;
   freqCanvas.classList.add('visible');
   levelBarWrap.classList.add('visible');
-  analyzeAudio();
+  analyzeLive();
 }
 
 function setCapturingUI(statusText, btnText) {
   setLiveStatus(statusText, 'capturing');
-  const btn = document.getElementById('live-btn');
-  btn.textContent = btnText;
-  btn.className = 'btn-live capturing';
+  document.getElementById('live-btn').textContent = btnText;
+  document.getElementById('live-btn').className = 'btn-live capturing';
 }
 
 function stopCapture() {
   liveCapturing = false;
   if (captureStream) { captureStream.getTracks().forEach(t => t.stop()); captureStream = null; }
-  if (audioCtx) { audioCtx.close(); audioCtx = null; }
-  if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
-  state.mouthTarget = 0;
+  if (audioCtx2) { audioCtx2.close(); audioCtx2 = null; }
+  if (liveRafId) { cancelAnimationFrame(liveRafId); liveRafId = null; }
+  st.openTarget = 0; st.wideTarget = 0.5;
   freqCanvas.classList.remove('visible');
   levelBarWrap.classList.remove('visible');
-  const btn = document.getElementById('live-btn');
-  btn.textContent = currentMethod === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
-  btn.className = 'btn-live';
+  document.getElementById('live-btn').textContent = currentMethod === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
+  document.getElementById('live-btn').className = 'btn-live';
   setLiveStatus('캡처 종료', '');
 }
 
-function analyzeAudio() {
+function analyzeLive() {
   if (!liveCapturing) return;
-  animFrameId = requestAnimationFrame(analyzeAudio);
-  analyser.getByteFrequencyData(freqData);
+  liveRafId = requestAnimationFrame(analyzeLive);
+  analyser2.getByteFrequencyData(freqData2);
 
-  const sampleRate = audioCtx.sampleRate;
-  const binSize = sampleRate / analyser.fftSize;
-  const lo = Math.max(1, Math.floor(200 / binSize));
-  const hi = Math.min(freqData.length - 1, Math.floor(4000 / binSize));
-  let sum = 0;
-  for (let i = lo; i <= hi; i++) sum += freqData[i];
-  const avg = sum / (hi - lo + 1);
+  const sr = audioCtx2.sampleRate;
+  const bin = sr / analyser2.fftSize;
 
-  const sensitivity = parseFloat(document.getElementById('sensitivity').value);
-  const rawOpen = Math.min(avg / sensitivity, 1.0);
-  state.mouthTarget = Math.pow(rawOpen, 0.65);
-  levelBar.style.width = (state.mouthTarget * 100) + '%';
+  // Speech band energy 200–4000 Hz
+  const lo = Math.max(1, Math.floor(200 / bin));
+  const hi = Math.min(freqData2.length - 1, Math.floor(4000 / bin));
+  let sumSpeech = 0;
+  for (let i = lo; i <= hi; i++) sumSpeech += freqData2[i];
+  const avgSpeech = sumSpeech / (hi - lo + 1);
+
+  // High-freq 1500–4000 Hz (bright/consonant)
+  const loH = Math.max(1, Math.floor(1500 / bin));
+  let sumHigh = 0;
+  for (let i = loH; i <= hi; i++) sumHigh += freqData2[i];
+  const avgHigh = sumHigh / (hi - loH + 1);
+
+  // Low-freq 200–800 Hz (vowel fundamentals → open)
+  const hiL = Math.floor(800 / bin);
+  let sumLow = 0;
+  for (let i = lo; i <= hiL; i++) sumLow += freqData2[i];
+  const avgLow = sumLow / (hiL - lo + 1);
+
+  const sens = parseFloat(document.getElementById('sensitivity').value);
+
+  // Noise gate: below threshold → close mouth
+  const noiseGate = sens * 0.28;
+  if (avgSpeech < noiseGate) {
+    st.openTarget = 0;
+    st.wideTarget = 0.5;
+    levelBar.style.width = '0%';
+    drawFreqViz();
+    return;
+  }
+
+  // Open: driven by low-freq energy (jaw drop)
+  const rawOpen = Math.min(avgSpeech / sens, 1.0);
+  st.openTarget = Math.pow(rawOpen, 0.6);
+
+  // Wide: ratio of high/low energy → high ratio = bright vowel (E/I) = wide
+  // low ratio = round vowel (O/U) = pursed
+  const brightness = avgHigh / Math.max(avgLow, 1);
+  // brightness ~0.3-1.5 typical range
+  const wideRaw = Math.min((brightness - 0.3) / 1.0, 1.0);
+  st.wideTarget = Math.max(0.1, Math.min(0.95, wideRaw));
+
+  levelBar.style.width = (st.openTarget * 100) + '%';
   drawFreqViz();
 }
 
@@ -885,26 +927,26 @@ function drawFreqViz() {
   const fw = freqCanvas.width, fh = freqCanvas.height;
   freqCtx.clearRect(0, 0, fw, fh);
   const barW = Math.ceil(fw / 80);
-  const step = Math.floor(freqData.length / 80);
+  const step = Math.floor(freqData2.length / 80);
   for (let i = 0; i < 80; i++) {
     let val = 0;
-    for (let j = 0; j < step; j++) val += freqData[i * step + j];
+    for (let j = 0; j < step; j++) val += freqData2[i * step + j];
     val /= step;
-    const barH = (val / 255) * fh;
-    freqCtx.fillStyle = `hsla(${200 + i * 1.5},80%,65%,0.85)`;
-    freqCtx.fillRect(i * barW, fh - barH, barW - 1, barH);
+    const h = (val / 255) * fh;
+    freqCtx.fillStyle = `hsla(${200 + i * 1.6}, 75%, 62%, 0.82)`;
+    freqCtx.fillRect(i * barW, fh - h, barW - 1, h);
   }
 }
 
-// ══════════════════════════════
+// ════════════════════════════════════════
 //  TABS
-// ══════════════════════════════
-function switchTab(name){
-  document.querySelectorAll('.tab').forEach((t,i)=>{
-    t.classList.toggle('active', (i===0&&name==='tts')||(i===1&&name==='live'));
+// ════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && name === 'tts') || (i === 1 && name === 'live'));
   });
-  document.getElementById('tab-tts').classList.toggle('active',name==='tts');
-  document.getElementById('tab-live').classList.toggle('active',name==='live');
+  document.getElementById('tab-tts').classList.toggle('active', name === 'tts');
+  document.getElementById('tab-live').classList.toggle('active', name === 'live');
 }
 </script>
 </body>
