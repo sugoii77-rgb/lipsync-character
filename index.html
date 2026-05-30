@@ -188,7 +188,7 @@ input[type=range] { flex:1; accent-color:#c084fc; cursor:pointer; }
 <!-- ── Character Display ── -->
 <div id="char-wrap">
   <canvas id="canvas" width="400" height="440"></canvas>
-  <video id="hg-video" autoplay playsinline muted></video>
+  <video id="hg-video" autoplay playsinline></video>
   <div id="conn-badge"><span class="dot-live"></span><span id="badge-text">HeyGen 연결됨</span></div>
   <div id="loading-overlay"><div class="spinner"></div><span id="loading-text">HeyGen 연결 중...</span></div>
   <div id="level-bar-wrap"><div id="level-bar"></div></div>
@@ -492,16 +492,17 @@ function charToViseme(ch){
 // ═══════════════════════════════════════════════
 let hgSession = null; // { session_id, pc }
 let hgConnected = false;
-const HEYGEN_API = 'https://api.heygen.com';
 
 function getApiKey(){ return document.getElementById('api-key').value.trim() || localStorage.getItem('hg_api_key') || ''; }
 function saveApiKey(k){ if(k) localStorage.setItem('hg_api_key', k); }
 
+// All HeyGen calls go through /api/heygen proxy to avoid CORS
 async function hgFetch(path, opts={}){
   const key = getApiKey();
-  return fetch(HEYGEN_API + path, {
+  const cleanPath = path.replace(/^\//,'');
+  return fetch(`/api/heygen?p=${encodeURIComponent(cleanPath)}`, {
     ...opts,
-    headers: { 'X-Api-Key': key, 'Content-Type': 'application/json', ...(opts.headers||{}) }
+    headers: { 'x-api-key': key, 'Content-Type': 'application/json', ...(opts.headers||{}) }
   });
 }
 
@@ -511,7 +512,7 @@ async function loadAvatars(){
   saveApiKey(key);
   setHGStatus('아바타 목록 로딩 중...','');
   try {
-    const r = await fetch(HEYGEN_API+'/v2/avatars',{headers:{'X-Api-Key':key}});
+    const r = await hgFetch('/v2/avatars');
     const d = await r.json();
     if(d.error) throw new Error(d.error);
     const avatars = d.data.avatars;
@@ -533,7 +534,7 @@ async function loadAvatars(){
 
 async function loadVoicesHG(key){
   try {
-    const r = await fetch(HEYGEN_API+'/v2/voices',{headers:{'X-Api-Key':key}});
+    const r = await hgFetch('/v2/voices');
     const d = await r.json();
     const voices = d.data.voices.filter(v=>v.support_interactive_avatar);
     const sel = document.getElementById('hg-voice-select');
@@ -591,46 +592,50 @@ async function connectHeyGen(){
     showLoading('WebRTC 연결 중...');
     const pc = new RTCPeerConnection({ iceServers: ice_servers });
 
-    // Receive avatar video
+    // Collect media tracks into a MediaStream for the video element
     const videoEl = document.getElementById('hg-video');
-    pc.ontrack = (e) => {
-      if(e.streams && e.streams[0]) videoEl.srcObject = e.streams[0];
-    };
+    const mediaStream = new MediaStream();
+    videoEl.srcObject = mediaStream;
 
-    // Needed: add transceiver so PC can receive
-    pc.addTransceiver('video', { direction: 'recvonly' });
-    pc.addTransceiver('audio', { direction: 'recvonly' });
+    pc.ontrack = (e) => { mediaStream.addTrack(e.track); };
 
-    // Set remote description (HeyGen's offer)
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-
-    // Create & set local answer
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    // ICE trickle
-    pc.onicecandidate = async ({ candidate }) => {
+    // ICE trickle — send candidates as they arrive
+    pc.onicecandidate = ({ candidate }) => {
       if(candidate){
-        await hgFetch('/v1/streaming.ice', {
+        hgFetch('/v1/streaming.ice', {
           method: 'POST',
           body: JSON.stringify({ session_id, candidate })
         }).catch(()=>{});
       }
     };
 
-    // 3. Send answer to HeyGen
-    await hgFetch('/v1/streaming.start', {
+    // Set remote description FIRST (HeyGen's SDP offer)
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+    // Create and set local answer
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // 3. Send answer SDP to HeyGen to start streaming
+    const startRes = await hgFetch('/v1/streaming.start', {
       method: 'POST',
       body: JSON.stringify({ session_id, sdp: answer })
     });
+    const startData = await startRes.json();
+    if(startData.code !== 100) throw new Error('start 실패: ' + (startData.message || JSON.stringify(startData)));
 
     hgSession = { session_id, pc };
 
-    // Wait for video to start playing
+    // Wait for video/audio to arrive (up to 20s)
     await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error('비디오 타임아웃')), 15000);
-      videoEl.onloadeddata = () => { clearTimeout(timeout); resolve(); };
-      videoEl.onerror = () => { clearTimeout(timeout); reject(new Error('비디오 오류')); };
+      const timeout = setTimeout(() => reject(new Error('비디오 타임아웃 (20초) — 아바타를 다시 선택해보세요')), 20000);
+      const done = () => { clearTimeout(timeout); resolve(); };
+      videoEl.onplaying = done;
+      // fallback: resolve when we have tracks
+      pc.onconnectionstatechange = () => {
+        if(pc.connectionState === 'connected') setTimeout(done, 1000);
+        if(pc.connectionState === 'failed') { clearTimeout(timeout); reject(new Error('WebRTC 연결 실패')); }
+      };
     });
 
     // Switch UI to HeyGen video
