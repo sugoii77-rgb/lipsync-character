@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 립싱크 캐릭터</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0d0d1a;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px 16px;
+  gap: 16px;
+}
+h1 {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #c084fc, #60a5fa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+#character-container {
+  width: 400px;
+  height: 440px;
+  border-radius: 24px;
+  border: 1px solid rgba(192, 132, 252, 0.2);
+  box-shadow: 0 0 60px rgba(192, 132, 252, 0.1);
+  overflow: hidden;
+  position: relative;
+}
+canvas { display: block; }
+
+/* ── Level meter ── */
+#level-bar-wrap {
+  position: absolute;
+  bottom: 12px; left: 12px; right: 12px;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#level-bar-wrap.visible { opacity: 1; }
+#level-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #60a5fa, #c084fc, #f472b6);
+  border-radius: 3px;
+  transition: width 0.05s;
+}
+
+/* ── Panel ── */
+.panel {
+  width: 400px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  overflow: hidden;
+}
+.tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.tab {
+  flex: 1;
+  padding: 13px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: rgba(255,255,255,0.4);
+  transition: all 0.2s;
+  border: none;
+  background: none;
+}
+.tab.active {
+  color: #c084fc;
+  border-bottom: 2px solid #c084fc;
+  margin-bottom: -1px;
+}
+.tab-body { display: none; padding: 16px; flex-direction: column; gap: 12px; }
+.tab-body.active { display: flex; }
+
+textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(192,132,252,0.3);
+  border-radius: 12px;
+  color: #fff;
+  padding: 11px 13px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+textarea:focus { outline: none; border-color: #c084fc; }
+textarea::placeholder { color: rgba(255,255,255,0.28); }
+
+.row { display: flex; gap: 10px; align-items: center; }
+select {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(192,132,252,0.3);
+  border-radius: 10px;
+  color: #fff;
+  padding: 8px 11px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+select:focus { outline: none; border-color: #c084fc; }
+select option { background: #1a1a2e; }
+label { font-size: 12px; color: rgba(255,255,255,0.45); white-space: nowrap; }
+
+button {
+  padding: 11px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary {
+  flex: 1;
+  background: linear-gradient(135deg, #c084fc, #818cf8);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(192,132,252,0.28);
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primary.active-speak {
+  background: linear-gradient(135deg, #f472b6, #c084fc);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.btn-stop {
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.65);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.btn-stop:hover { background: rgba(255,255,255,0.12); }
+
+.btn-live {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 4px 18px rgba(52,211,153,0.25);
+  border-radius: 14px;
+}
+.btn-live:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-live.capturing {
+  background: linear-gradient(135deg, #f87171, #dc2626);
+  box-shadow: 0 4px 18px rgba(248,113,113,0.3);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
+
+.info-box {
+  background: rgba(96,165,250,0.08);
+  border: 1px solid rgba(96,165,250,0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.65);
+}
+.info-box strong { color: #93c5fd; }
+.info-box ol { padding-left: 16px; margin-top: 6px; }
+.info-box li { margin-bottom: 3px; }
+
+.sensitivity-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+input[type=range] {
+  flex: 1;
+  accent-color: #c084fc;
+  cursor: pointer;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.38);
+  padding-top: 4px;
+}
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+}
+.dot.speaking { background: #f472b6; animation: blink .8s ease-in-out infinite; }
+.dot.capturing { background: #34d399; animation: blink .6s ease-in-out infinite; }
+.dot.error { background: #f87171; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* Frequency visualizer */
+#freq-canvas {
+  width: 100%;
+  height: 50px;
+  border-radius: 8px;
+  background: rgba(0,0,0,0.25);
+  display: none;
+}
+#freq-canvas.visible { display: block; }
+</style>
+</head>
+<body>
+
+<h1>✨ AI 립싱크 캐릭터</h1>
+
+<div id="character-container">
+  <canvas id="canvas" width="400" height="440"></canvas>
+  <div id="level-bar-wrap"><div id="level-bar"></div></div>
+</div>
+
+<div class="panel">
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('tts')">🎙️ TTS 모드</button>
+    <button class="tab" onclick="switchTab('live')">🔴 Live 모드</button>
+  </div>
+
+  <!-- TTS TAB -->
+  <div class="tab-body active" id="tab-tts">
+    <textarea id="text-input" placeholder="여기에 텍스트를 입력하세요... (Ctrl+Enter)">안녕하세요! 저는 AI 립싱크 캐릭터예요. 텍스트를 입력하고 말하기를 눌러보세요!</textarea>
+    <div class="row">
+      <label>목소리</label>
+      <select id="voice-select"><option value="-1">로딩 중...</option></select>
+    </div>
+    <div class="row">
+      <label>속도</label>
+      <select id="speed-select">
+        <option value="0.7">느리게</option>
+        <option value="0.85">약간 느리게</option>
+        <option value="1.0" selected>기본</option>
+        <option value="1.2">빠르게</option>
+        <option value="1.5">매우 빠르게</option>
+      </select>
+      <label>음정</label>
+      <select id="pitch-select">
+        <option value="0.8">낮게</option>
+        <option value="1.0">기본</option>
+        <option value="1.2" selected>높게</option>
+        <option value="1.5">매우 높게</option>
+      </select>
+    </div>
+    <div class="row">
+      <button class="btn-primary" id="speak-btn" onclick="speak()">🎙️ 말하기</button>
+      <button class="btn-stop" onclick="stopTTS()">⏹ 멈추기</button>
+    </div>
+    <div class="status-bar">
+      <div class="dot" id="tts-dot"></div>
+      <span id="tts-status">준비됨 — Ctrl+Enter로 말하기</span>
+    </div>
+  </div>
+
+  <!-- LIVE TAB -->
+  <div class="tab-body" id="tab-live">
+    <div class="info-box">
+      <strong>PC의 모든 소리에 실시간 립싱크</strong><br>
+      아래 버튼을 누르면 화면 공유 창이 뜹니다.
+      <ol>
+        <li>공유할 탭·창·전체 화면 선택</li>
+        <li><strong>"시스템 오디오 공유"</strong> 체크 ✓ (중요!)</li>
+        <li>공유 버튼 클릭</li>
+      </ol>
+      이후 AI 목소리가 나오면 자동으로 입이 움직입니다.
+    </div>
+
+    <canvas id="freq-canvas" width="368" height="50"></canvas>
+
+    <div class="sensitivity-row">
+      <label>민감도</label>
+      <input type="range" id="sensitivity" min="30" max="200" value="80">
+      <span id="sens-val" style="font-size:12px;color:rgba(255,255,255,0.4);width:30px">80</span>
+    </div>
+
+    <button class="btn-live" id="live-btn" onclick="toggleCapture()">
+      🎧 시스템 오디오 캡처 시작
+    </button>
+
+    <div class="status-bar">
+      <div class="dot" id="live-dot"></div>
+      <span id="live-status">대기 중</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+//  CANVAS SETUP
+// ══════════════════════════════
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = 400, H = 440;
+const CX = W / 2, CY = H / 2 - 10;
+
+const state = {
+  mouthOpen: 0,
+  mouthTarget: 0,
+  blink: 0,
+  blinkTimer: 2000,
+  blinking: false,
+  speaking: false,
+  bobTimer: 0,
+  breathTimer: 0,
+  glanceX: 0,
+  glanceTimer: 0,
+  cheekAlpha: 0.28,
+};
+
+function lerp(a, b, t) { return a + (b - a) * Math.min(t, 1); }
+function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+// ══════════════════════════════
+//  DRAW
+// ══════════════════════════════
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#131325'); bg.addColorStop(1, '#0d0d1a');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(CX, CY - 30, 20, CX, CY - 30, 220);
+  glow.addColorStop(0, 'rgba(192,132,252,0.07)'); glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+
+  const bob    = Math.sin(state.bobTimer) * (state.speaking ? 2.5 : 0.8);
+  const breath = Math.sin(state.breathTimer) * 1.2;
+  ctx.save(); ctx.translate(0, bob + breath);
+
+  drawShadow(); drawBody(); drawNeck(); drawHairBack();
+  drawFace(); drawEars(); drawEyebrows(); drawEyes();
+  drawNose(); drawMouth(); drawCheeks(); drawHairFront(); drawHairAccessory();
+
+  ctx.restore();
+}
+
+function drawShadow() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(CX+4, CY+6, 96, 112, 0, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawBody() {
+  ctx.save();
+  const g = ctx.createLinearGradient(CX-110, CY+100, CX+110, H);
+  g.addColorStop(0,'#4c3a9e'); g.addColorStop(1,'#2d1f7a');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(CX-110, H);
+  ctx.quadraticCurveTo(CX-120,CY+140,CX-70,CY+95);
+  ctx.quadraticCurveTo(CX-30,CY+80,CX,CY+78);
+  ctx.quadraticCurveTo(CX+30,CY+80,CX+70,CY+95);
+  ctx.quadraticCurveTo(CX+120,CY+140,CX+110,H);
+  ctx.closePath(); ctx.fill();
+  // collar
+  ctx.fillStyle='#f5f5ff';
+  ctx.beginPath(); ctx.moveTo(CX-28,CY+95); ctx.lineTo(CX,CY+132); ctx.lineTo(CX+28,CY+95);
+  ctx.lineTo(CX+18,CY+88); ctx.lineTo(CX,CY+108); ctx.lineTo(CX-18,CY+88); ctx.closePath(); ctx.fill();
+  const lc=ctx.createLinearGradient(CX-70,CY+85,CX-18,CY+88);
+  lc.addColorStop(0,'#e0dff8'); lc.addColorStop(1,'#c8c7ee');
+  ctx.fillStyle=lc;
+  ctx.beginPath(); ctx.moveTo(CX-65,CY+88); ctx.lineTo(CX-18,CY+88);
+  ctx.lineTo(CX,CY+132); ctx.lineTo(CX-75,CY+108); ctx.closePath(); ctx.fill();
+  const rc=ctx.createLinearGradient(CX+18,CY+88,CX+70,CY+85);
+  rc.addColorStop(0,'#c8c7ee'); rc.addColorStop(1,'#b8b7de');
+  ctx.fillStyle=rc;
+  ctx.beginPath(); ctx.moveTo(CX+65,CY+88); ctx.lineTo(CX+18,CY+88);
+  ctx.lineTo(CX,CY+132); ctx.lineTo(CX+75,CY+108); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawNeck() {
+  ctx.save();
+  const g=ctx.createLinearGradient(CX-22,0,CX+22,0);
+  g.addColorStop(0,'#f0c4a0'); g.addColorStop(0.4,'#ffd5b5'); g.addColorStop(1,'#e8b890');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.moveTo(CX-20,CY+62); ctx.lineTo(CX+20,CY+62);
+  ctx.lineTo(CX+22,CY+92); ctx.lineTo(CX-22,CY+92); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawFace() {
+  ctx.save();
+  const g=ctx.createRadialGradient(CX-25,CY-25,5,CX,CY,105);
+  g.addColorStop(0,'#ffe0c2'); g.addColorStop(0.5,'#ffd0b0'); g.addColorStop(1,'#f0b898');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.ellipse(CX,CY,93,108,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#f5c5a2';
+  ctx.beginPath();
+  ctx.moveTo(CX-70,CY+18);
+  ctx.quadraticCurveTo(CX-82,CY+65,CX,CY+108);
+  ctx.quadraticCurveTo(CX+82,CY+65,CX+70,CY+18);
+  ctx.quadraticCurveTo(CX,CY+35,CX-70,CY+18);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawEars() {
+  ctx.save();
+  [[-90,-0.15],[90,0.15]].forEach(([ex,t]) => {
+    ctx.fillStyle='#f0c0a0';
+    ctx.beginPath(); ctx.ellipse(CX+ex,CY-5,13,17,t,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#e0a880';
+    ctx.beginPath(); ctx.ellipse(CX+ex,CY-3,7,11,t,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+function drawHairBack() {
+  ctx.save();
+  const g=ctx.createLinearGradient(CX,CY-120,CX,H);
+  g.addColorStop(0,'#7048c0'); g.addColorStop(0.4,'#5a35a8'); g.addColorStop(1,'#2d1a60');
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.ellipse(CX,CY-28,103,113,0,0,Math.PI*2); ctx.fill();
+  // left strand
+  ctx.beginPath();
+  ctx.moveTo(CX-82,CY-18);
+  ctx.bezierCurveTo(CX-130,CY+60,CX-120,CY+160,CX-95,H-20);
+  ctx.lineTo(CX-60,H-20);
+  ctx.bezierCurveTo(CX-90,CY+160,CX-100,CY+60,CX-52,CY-8);
+  ctx.closePath(); ctx.fill();
+  // right strand
+  ctx.beginPath();
+  ctx.moveTo(CX+82,CY-18);
+  ctx.bezierCurveTo(CX+130,CY+60,CX+120,CY+160,CX+95,H-20);
+  ctx.lineTo(CX+60,H-20);
+  ctx.bezierCurveTo(CX+90,CY+160,CX+100,CY+60,CX+52,CY-8);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawHairFront() {
+  ctx.save();
+  const g=ctx.createLinearGradient(CX,CY-130,CX,CY-10);
+  g.addColorStop(0,'#8855d0'); g.addColorStop(1,'#6040b8');
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.moveTo(CX-100,CY-48);
+  ctx.bezierCurveTo(CX-95,CY-132,CX-10,CY-142,CX,CY-142);
+  ctx.bezierCurveTo(CX+10,CY-142,CX+95,CY-132,CX+100,CY-48);
+  ctx.bezierCurveTo(CX+75,CY-38,CX+45,CY-16,CX+25,CY-42);
+  ctx.bezierCurveTo(CX+18,CY-30,CX+8,CY-26,CX,CY-38);
+  ctx.bezierCurveTo(CX-8,CY-26,CX-18,CY-30,CX-25,CY-42);
+  ctx.bezierCurveTo(CX-45,CY-16,CX-75,CY-38,CX-100,CY-48);
+  ctx.closePath(); ctx.fill();
+  // highlight
+  ctx.fillStyle='rgba(180,140,255,0.4)';
+  ctx.beginPath(); ctx.ellipse(CX-18,CY-100,12,28,-0.25,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(CX+32,CY-95,8,18,0.3,0,Math.PI*2); ctx.fill();
+  // side tufts
+  ctx.fillStyle='#7a4cbe';
+  ctx.beginPath(); ctx.moveTo(CX-88,CY-28);
+  ctx.bezierCurveTo(CX-115,CY+5,CX-108,CY+45,CX-90,CY+52);
+  ctx.bezierCurveTo(CX-75,CY+58,CX-68,CY+30,CX-72,CY-20); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(CX+88,CY-28);
+  ctx.bezierCurveTo(CX+115,CY+5,CX+108,CY+45,CX+90,CY+52);
+  ctx.bezierCurveTo(CX+75,CY+58,CX+68,CY+30,CX+72,CY-20); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawHairAccessory() {
+  ctx.save();
+  ctx.fillStyle='#fbbf24'; ctx.shadowColor='#f59e0b'; ctx.shadowBlur=8;
+  ctx.translate(CX+58,CY-78);
+  ctx.beginPath();
+  for(let i=0;i<10;i++){
+    const r=i%2===0?11:5, a=(i*Math.PI)/5-Math.PI/2;
+    i===0?ctx.moveTo(r*Math.cos(a),r*Math.sin(a)):ctx.lineTo(r*Math.cos(a),r*Math.sin(a));
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawEyebrows() {
+  ctx.save();
+  const browY=CY-48;
+  ctx.strokeStyle='#4a2888'; ctx.lineWidth=3.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(CX-52,browY+4); ctx.quadraticCurveTo(CX-34,browY-4,CX-16,browY+1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX+16,browY+1); ctx.quadraticCurveTo(CX+34,browY-4,CX+52,browY+4); ctx.stroke();
+  ctx.restore();
+}
+function drawEyes() {
+  ctx.save();
+  const blink=state.blink, eyeY=CY-15, glX=state.glanceX;
+  [-1,1].forEach(side=>{
+    const ex=CX+side*33;
+    const sy=1-blink;
+    ctx.save(); ctx.translate(ex,eyeY); ctx.scale(1,sy);
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.ellipse(0,0,20,22,0,0,Math.PI*2); ctx.fill();
+    const sh=ctx.createLinearGradient(0,-22,0,5);
+    sh.addColorStop(0,'rgba(150,100,220,0.4)'); sh.addColorStop(1,'transparent');
+    ctx.fillStyle=sh;
+    ctx.beginPath(); ctx.ellipse(0,-4,20,18,0,0,Math.PI*2); ctx.fill();
+    const ig=ctx.createRadialGradient(glX*4-3,-5,1,glX*4,0,14);
+    ig.addColorStop(0,'#8dd4f8'); ig.addColorStop(0.35,'#4a96e8');
+    ig.addColorStop(0.7,'#2a6ab8'); ig.addColorStop(1,'#153d80');
+    ctx.fillStyle=ig;
+    ctx.beginPath(); ctx.ellipse(glX*4,0,13,16,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#08152a';
+    ctx.beginPath(); ctx.ellipse(glX*4+1,1,6,8,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.95)';
+    ctx.beginPath(); ctx.ellipse(glX*4-4,-6,4,4,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.ellipse(glX*4+5,3,2.5,2.5,0,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+    // lashes
+    if(blink<0.6){
+      ctx.save(); ctx.strokeStyle='#1a0530'; ctx.lineWidth=2; ctx.lineCap='round';
+      const ly=eyeY-22*(1-blink);
+      for(let i=-3;i<=3;i++){
+        const lx=ex+i*5.5;
+        ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(lx+i*1.2,ly-5-Math.abs(i)*0.5); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // blink overlay
+    if(blink>0.05){
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ex-26,eyeY-28,52,28+24*blink); ctx.clip();
+      ctx.fillStyle='#ffd0b0';
+      ctx.beginPath(); ctx.ellipse(ex,eyeY,24,26,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  });
+  ctx.restore();
+}
+function drawNose() {
+  ctx.save();
+  ctx.strokeStyle='#cc8866'; ctx.lineWidth=1.5; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(CX-6,CY+20);
+  ctx.quadraticCurveTo(CX-4,CY+25,CX,CY+24);
+  ctx.quadraticCurveTo(CX+4,CY+25,CX+6,CY+20); ctx.stroke();
+  ctx.restore();
+}
+function drawMouth() {
+  ctx.save();
+  const open=state.mouthOpen, my=CY+50;
+  if(open>0.04){
+    const mw=20+open*14, mh=open*20;
+    ctx.fillStyle='#1a0510';
+    ctx.beginPath(); ctx.ellipse(CX,my+mh*0.35,mw,Math.max(mh,2),0,0,Math.PI*2); ctx.fill();
+    if(open>0.15){
+      const th=Math.min(open*14,10);
+      ctx.fillStyle='#fff8f6';
+      ctx.beginPath(); ctx.ellipse(CX,my-1,mw-3,th,0,Math.PI,2*Math.PI); ctx.fill();
+    }
+    if(open>0.35){
+      const lh=Math.min((open-0.35)*10,7);
+      ctx.fillStyle='#f8f0f2';
+      ctx.beginPath(); ctx.ellipse(CX,my+mh*0.7,mw-5,lh,0,0,Math.PI); ctx.fill();
+    }
+    if(open>0.55){
+      const ta=(open-0.55)/0.45;
+      ctx.fillStyle=`rgba(228,100,110,${ta*0.9})`;
+      ctx.beginPath(); ctx.ellipse(CX,my+mh-4,mw*0.5*ta,mh*0.35*ta,0,0,Math.PI); ctx.fill();
+    }
+  }
+  const ls=open*5;
+  ctx.fillStyle='#c85575';
+  ctx.beginPath();
+  ctx.moveTo(CX-26,my-ls);
+  ctx.bezierCurveTo(CX-14,my-9-ls,CX-5,my-6-ls,CX,my-10-ls);
+  ctx.bezierCurveTo(CX+5,my-6-ls,CX+14,my-9-ls,CX+26,my-ls);
+  ctx.bezierCurveTo(CX+16,my-1-ls,CX,my-ls,CX-16,my-1-ls);
+  ctx.closePath(); ctx.fill();
+  const by=my+open*16;
+  ctx.fillStyle='#d86585';
+  ctx.beginPath();
+  ctx.moveTo(CX-26,my-ls);
+  ctx.bezierCurveTo(CX-14,my+8+open*14,CX+14,my+8+open*14,CX+26,my-ls);
+  ctx.bezierCurveTo(CX+20,by+9,CX,by+12,CX-20,by+9); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='rgba(255,200,215,0.4)';
+  ctx.beginPath(); ctx.ellipse(CX+4,by+7,9,3.5,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#b84468';
+  [-26,26].forEach(ox=>{ctx.beginPath();ctx.arc(CX+ox,my-ls+1,2,0,Math.PI*2);ctx.fill();});
+  ctx.restore();
+}
+function drawCheeks() {
+  ctx.save();
+  const a=state.cheekAlpha;
+  [-55,55].forEach(ox=>{
+    const g=ctx.createRadialGradient(CX+ox,CY+22,0,CX+ox,CY+22,28);
+    g.addColorStop(0,`rgba(255,140,165,${a})`); g.addColorStop(1,'transparent');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.ellipse(CX+ox,CY+22,28,17,0,0,Math.PI*2); ctx.fill();
+  });
+  ctx.restore();
+}
+
+// ══════════════════════════════
+//  ANIMATION LOOP
+// ══════════════════════════════
+let lastTs=0, visemeTimer=0;
+
+function loop(ts) {
+  const dt=Math.min(ts-lastTs,50); lastTs=ts;
+  state.breathTimer += dt*0.0008;
+  state.bobTimer    += dt*0.0018*(state.speaking?1.8:0.6);
+  state.blinkTimer  -= dt;
+  if(state.blinkTimer<=0&&!state.blinking){ state.blinkTimer=1800+Math.random()*3500; doBlink(); }
+  state.glanceTimer -= dt;
+  if(state.glanceTimer<=0){ state.glanceTimer=2000+Math.random()*4000; state.glanceX=(Math.random()-0.5)*2; }
+
+  // TTS mouth simulation
+  if(state.speaking && !liveCapturing) {
+    visemeTimer-=dt;
+    if(visemeTimer<=0){
+      visemeTimer=55+Math.random()*70;
+      const opts=[0.1,0.25,0.45,0.65,0.85,0.5,0.3,0.7,0.15,0.9];
+      state.mouthTarget=opts[Math.floor(Math.random()*opts.length)];
+    }
+  } else if(!liveCapturing) {
+    state.mouthTarget=0;
+  }
+
+  state.mouthOpen   = lerp(state.mouthOpen, state.mouthTarget, dt*0.014);
+  state.cheekAlpha  = lerp(state.cheekAlpha, state.speaking||liveCapturing?0.52:0.28, dt*0.004);
+  render();
+  requestAnimationFrame(loop);
+}
+function doBlink(){
+  state.blinking=true;
+  const dur=130, start=performance.now();
+  function step(t){
+    const p=(t-start)/dur;
+    state.blink=p<0.5?easeOut(p*2):easeOut((1-p)*2);
+    if(p<1) requestAnimationFrame(step);
+    else { state.blink=0; state.blinking=false; }
+  }
+  requestAnimationFrame(step);
+}
+requestAnimationFrame(loop);
+
+// ══════════════════════════════
+//  TTS
+// ══════════════════════════════
+const synth=window.speechSynthesis;
+let utt=null;
+
+function loadVoices(){
+  const sel=document.getElementById('voice-select');
+  const voices=synth.getVoices();
+  if(!voices.length){ setTimeout(loadVoices,300); return; }
+  sel.innerHTML='';
+  voices.forEach((v,i)=>{
+    const opt=document.createElement('option');
+    opt.value=i; opt.textContent=`${v.name} (${v.lang})`; sel.appendChild(opt);
+  });
+  const ko=voices.findIndex(v=>v.lang.startsWith('ko'));
+  if(ko>=0) sel.value=ko;
+  else { const en=voices.findIndex(v=>v.lang.startsWith('en')); if(en>=0) sel.value=en; }
+}
+synth.onvoiceschanged=loadVoices; loadVoices();
+
+function setTTSStatus(text,mode){
+  document.getElementById('tts-status').textContent=text;
+  const d=document.getElementById('tts-dot'); d.className='dot '+(mode||'');
+  document.getElementById('speak-btn').className='btn-primary'+(mode==='speaking'?' active-speak':'');
+}
+function speak(){
+  if(synth.speaking) synth.cancel();
+  const text=document.getElementById('text-input').value.trim();
+  if(!text) return;
+  utt=new SpeechSynthesisUtterance(text);
+  const voices=synth.getVoices();
+  const vi=parseInt(document.getElementById('voice-select').value);
+  if(!isNaN(vi)&&voices[vi]) utt.voice=voices[vi];
+  utt.rate=parseFloat(document.getElementById('speed-select').value);
+  utt.pitch=parseFloat(document.getElementById('pitch-select').value);
+  utt.onstart=()=>{ state.speaking=true; setTTSStatus('말하는 중...','speaking'); };
+  utt.onend=()=>{ state.speaking=false; state.mouthTarget=0; setTTSStatus('완료 ✓',''); setTimeout(()=>setTTSStatus('준비됨 — Ctrl+Enter로 말하기',''),2000); };
+  utt.onerror=()=>{ state.speaking=false; setTTSStatus('오류 발생','error'); };
+  synth.speak(utt);
+}
+function stopTTS(){
+  synth.cancel(); state.speaking=false; state.mouthTarget=0; setTTSStatus('멈춤','');
+}
+document.getElementById('text-input').addEventListener('keydown',e=>{ if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();speak();} });
+
+// ══════════════════════════════
+//  LIVE AUDIO CAPTURE
+// ══════════════════════════════
+let liveCapturing=false;
+let audioCtx=null, analyser=null, freqData=null;
+let captureStream=null, animFrameId=null;
+const freqCanvas=document.getElementById('freq-canvas');
+const freqCtx=freqCanvas.getContext('2d');
+const levelBar=document.getElementById('level-bar');
+const levelBarWrap=document.getElementById('level-bar-wrap');
+
+document.getElementById('sensitivity').addEventListener('input',function(){
+  document.getElementById('sens-val').textContent=this.value;
+});
+
+function setLiveStatus(text,mode){
+  document.getElementById('live-status').textContent=text;
+  const d=document.getElementById('live-dot'); d.className='dot '+(mode||'');
+}
+
+async function toggleCapture(){
+  if(liveCapturing){ stopCapture(); return; }
+  await startCapture();
+}
+
+async function startCapture(){
+  setLiveStatus('화면 공유 창 대기 중...','');
+  try {
+    // Request screen share with audio
+    captureStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { width: 1, height: 1, frameRate: 1 },
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        sampleRate: 44100,
+      }
+    });
+
+    // Check if audio track exists
+    const audioTracks = captureStream.getAudioTracks();
+    if(audioTracks.length === 0){
+      setLiveStatus('⚠️ 오디오 트랙 없음 — "시스템 오디오 공유" 체크 필요','error');
+      captureStream.getTracks().forEach(t=>t.stop());
+      captureStream=null;
+      return;
+    }
+
+    // Stop video tracks (not needed)
+    captureStream.getVideoTracks().forEach(t=>t.stop());
+
+    // Set up audio analysis
+    audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(captureStream);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.75;
+    source.connect(analyser);
+    // Do NOT connect to destination → no echo
+
+    freqData = new Uint8Array(analyser.frequencyBinCount);
+
+    liveCapturing = true;
+    freqCanvas.classList.add('visible');
+    levelBarWrap.classList.add('visible');
+
+    const btn=document.getElementById('live-btn');
+    btn.textContent='⏹ 캡처 중지';
+    btn.className='btn-live capturing';
+    setLiveStatus('실시간 캡처 중 — AI 소리에 맞춰 입이 움직입니다','capturing');
+
+    // Listen for stream end (user stopped sharing)
+    captureStream.getAudioTracks()[0].onended = () => stopCapture();
+
+    analyzeAudio();
+
+  } catch(e) {
+    if(e.name==='NotAllowedError') setLiveStatus('공유가 취소되었습니다','');
+    else setLiveStatus('오류: '+e.message,'error');
+  }
+}
+
+function stopCapture(){
+  liveCapturing=false;
+  if(captureStream) { captureStream.getTracks().forEach(t=>t.stop()); captureStream=null; }
+  if(audioCtx) { audioCtx.close(); audioCtx=null; }
+  if(animFrameId) { cancelAnimationFrame(animFrameId); animFrameId=null; }
+  state.mouthTarget=0;
+  freqCanvas.classList.remove('visible');
+  levelBarWrap.classList.remove('visible');
+  const btn=document.getElementById('live-btn');
+  btn.textContent='🎧 시스템 오디오 캡처 시작';
+  btn.className='btn-live';
+  setLiveStatus('캡처 종료','');
+}
+
+function analyzeAudio(){
+  if(!liveCapturing){ return; }
+  animFrameId=requestAnimationFrame(analyzeAudio);
+
+  analyser.getByteFrequencyData(freqData);
+
+  // Calculate energy in speech band (200 Hz – 4000 Hz)
+  const sampleRate = audioCtx.sampleRate;
+  const binSize = sampleRate / analyser.fftSize;
+  const lo = Math.max(1, Math.floor(200 / binSize));
+  const hi = Math.min(freqData.length-1, Math.floor(4000 / binSize));
+  let sum=0;
+  for(let i=lo; i<=hi; i++) sum+=freqData[i];
+  const avg = sum / (hi-lo+1);
+
+  // Map to mouth openness
+  const sensitivity = parseFloat(document.getElementById('sensitivity').value);
+  const rawOpen = Math.min(avg / sensitivity, 1.0);
+  // Apply a curve so small sounds = barely open, loud = wide open
+  const mapped = Math.pow(rawOpen, 0.7);
+  state.mouthTarget = mapped;
+
+  // Level bar
+  levelBar.style.width = (mapped*100)+'%';
+
+  // Frequency visualizer
+  drawFreqViz();
+}
+
+function drawFreqViz(){
+  const fw=freqCanvas.width, fh=freqCanvas.height;
+  freqCtx.clearRect(0,0,fw,fh);
+  freqCtx.fillStyle='rgba(0,0,0,0)';
+  freqCtx.fillRect(0,0,fw,fh);
+
+  const barW=Math.ceil(fw/80);
+  const step=Math.floor(freqData.length/80);
+
+  for(let i=0;i<80;i++){
+    let val=0;
+    for(let j=0;j<step;j++) val+=freqData[i*step+j];
+    val/=step;
+    const barH=(val/255)*fh;
+    const hue=200+i*1.5;
+    freqCtx.fillStyle=`hsla(${hue},80%,65%,0.85)`;
+    freqCtx.fillRect(i*barW, fh-barH, barW-1, barH);
+  }
+}
+
+// ══════════════════════════════
+//  TABS
+// ══════════════════════════════
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{
+    t.classList.toggle('active', (i===0&&name==='tts')||(i===1&&name==='live'));
+  });
+  document.getElementById('tab-tts').classList.toggle('active',name==='tts');
+  document.getElementById('tab-live').classList.toggle('active',name==='live');
+}
+</script>
+</body>
+</html>
