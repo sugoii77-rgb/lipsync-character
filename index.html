@@ -338,38 +338,53 @@ function updateAvPreview(){
 }
 document.getElementById('avatar-sel').addEventListener('change',updateAvPreview);
 
+async function stopAllSessions(){
+  try{
+    const r=await laFetch('/v1/sessions?type=active');
+    const d=await r.json();
+    if(d.code===1000&&d.data.results.length>0){
+      for(const s of d.data.results){
+        await laFetch('/v1/sessions/stop',{method:'POST',body:JSON.stringify({session_id:s.id})});
+        console.log('[LA] stopped session',s.id);
+      }
+    }
+  }catch(e){console.warn('[LA] stopAllSessions error',e);}
+}
+
 async function connectLA(){
   const avatarId=document.getElementById('avatar-sel').value;
   const voiceId=document.getElementById('voice-sel').value;
   if(!avatarId){setLAStatus('아바타를 선택하세요','error');return;}
   if(laConnected)await disconnectLA();
 
-  showLoading('세션 토큰 발급 중...');setPill('connecting');setLAStatus('연결 중...','');
+  showLoading('기존 세션 정리 중...');setPill('connecting');setLAStatus('연결 중...','');
+  const key=getKey();
+  if(key.startsWith('sk_')||key.length<30){
+    hideLoading();setPill('error');
+    setLAStatus('❌ HeyGen 키입니다. LiveAvatar UUID 형식 키를 입력하세요','error');
+    return;
+  }
+
   try{
-    const key=getKey();
-    console.log('[LA] key prefix:', key.slice(0,8), 'avatar:', avatarId, 'voice:', voiceId);
-    // Detect wrong key type
-    if(key.startsWith('sk_')||key.length<30){
-      hideLoading();setPill('error');
-      setLAStatus('❌ HeyGen 키가 입력되어 있습니다! LiveAvatar 키(UUID 형식)를 입력하세요','error');
-      return;
-    }
+    // 0. Stop any existing sessions (avoid concurrency limit)
+    await stopAllSessions();
 
     // 1. Get session token
+    showLoading('세션 토큰 발급 중...');
     const tokenBody={mode:'LITE',avatar_id:avatarId};
     if(voiceId) tokenBody.voice_id=voiceId;
     const tr=await laFetch('/v1/sessions/token',{method:'POST',body:JSON.stringify(tokenBody)});
     const td=await tr.json();
-    console.log('[LA] token response:', td);
-    if(td.code!==1000)throw new Error(`[${td.code}] ${td.message||'토큰 발급 실패'}`);
+    console.log('[LA] token:', td);
+    if(td.code!==1000)throw new Error(`[${td.code}] ${td.message}`);
     const{session_id,session_token}=td.data;
 
     // 2. Start session → get LiveKit info
     showLoading('LiveKit 세션 시작 중...');
     const sr=await laFetchBearer('/v1/sessions/start',session_token,{method:'POST',body:JSON.stringify({session_token})});
     const sd=await sr.json();
-    console.log('[LA] start response:', sd);
-    if(sd.code!==1000)throw new Error(`[${sd.code}] ${sd.message||'세션 시작 실패'}`);
+    console.log('[LA] start:', sd);
+    if(sd.code!==1000)throw new Error(`[${sd.code}] ${sd.message}`);
     const{livekit_url,livekit_client_token,ws_url}=sd.data;
 
     laSession={session_id,session_token,ws_url};
@@ -430,6 +445,9 @@ function connectSpeakWS(wsUrl,token){
 
 async function disconnectLA(){
   laConnected=false;
+  if(laSession?.session_id){
+    laFetch('/v1/sessions/stop',{method:'POST',body:JSON.stringify({session_id:laSession.session_id})}).catch(()=>{});
+  }
   if(laRoom){try{await laRoom.disconnect();}catch(_){}laRoom=null;}
   if(laSpeakWs){laSpeakWs.close();laSpeakWs=null;}
   laSession=null;
