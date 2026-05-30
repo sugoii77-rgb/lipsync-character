@@ -207,6 +207,14 @@ input[type=range] {
 .dot.capturing { background: #34d399; animation: blink .6s ease-in-out infinite; }
 .dot.error { background: #f87171; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+.method-tabs { display: flex; gap: 8px; }
+.mtab {
+  flex: 1; padding: 9px; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px; background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s;
+}
+.mtab.active { background: rgba(192,132,252,0.15); border-color: #c084fc; color: #c084fc; }
 
 /* Frequency visualizer */
 #freq-canvas {
@@ -270,27 +278,54 @@ input[type=range] {
 
   <!-- LIVE TAB -->
   <div class="tab-body" id="tab-live">
-    <div class="info-box">
-      <strong>PC의 모든 소리에 실시간 립싱크</strong><br>
-      아래 버튼을 누르면 화면 공유 창이 뜹니다.
-      <ol>
-        <li>공유할 탭·창·전체 화면 선택</li>
-        <li><strong>"시스템 오디오 공유"</strong> 체크 ✓ (중요!)</li>
-        <li>공유 버튼 클릭</li>
-      </ol>
-      이후 AI 목소리가 나오면 자동으로 입이 움직입니다.
+
+    <!-- Method selector -->
+    <div class="method-tabs">
+      <button class="mtab active" id="mtab-mic" onclick="switchMethod('mic')">🎤 마이크 입력</button>
+      <button class="mtab" id="mtab-screen" onclick="switchMethod('screen')">🖥️ 화면 공유</button>
+    </div>
+
+    <!-- MIC method -->
+    <div id="method-mic">
+      <div class="info-box">
+        <strong>마이크/오디오 장치로 입력 (권장)</strong><br>
+        오디오 입력 장치를 선택해 AI 소리를 감지합니다.<br><br>
+        <strong>가장 쉬운 방법:</strong> 아래 버튼을 누르고 허용하면 바로 사용 가능합니다.<br><br>
+        <strong>더 깔끔하게 쓰려면:</strong><br>
+        <span style="color:#93c5fd">Windows 설정 → 사운드 → 녹음 탭 → "스테레오 믹스" 활성화</span><br>
+        후 아래에서 해당 장치 선택 → PC 전체 소리 캡처 가능
+      </div>
+      <div class="row" style="margin-top:4px">
+        <label>입력 장치</label>
+        <select id="mic-select"><option value="">기본 마이크</option></select>
+        <button class="btn-stop" style="padding:8px 12px;font-size:12px" onclick="refreshMics()">↻</button>
+      </div>
+    </div>
+
+    <!-- Screen share method -->
+    <div id="method-screen" style="display:none">
+      <div class="info-box">
+        <strong>화면 공유로 시스템 오디오 캡처</strong><br>
+        ⚠️ <strong>이 캐릭터 창이 아닌</strong>, AI가 말하는 다른 창을 선택하세요.<br><br>
+        <ol>
+          <li>ChatGPT·Claude 등 AI 탭 또는 전체 화면 선택</li>
+          <li><strong>"시스템 오디오 공유"</strong> 체크 ✓</li>
+          <li>공유 클릭</li>
+        </ol>
+        캐릭터 창 자체를 공유하면 캐릭터가 숨겨집니다.
+      </div>
     </div>
 
     <canvas id="freq-canvas" width="368" height="50"></canvas>
 
     <div class="sensitivity-row">
       <label>민감도</label>
-      <input type="range" id="sensitivity" min="30" max="200" value="80">
-      <span id="sens-val" style="font-size:12px;color:rgba(255,255,255,0.4);width:30px">80</span>
+      <input type="range" id="sensitivity" min="20" max="200" value="60">
+      <span id="sens-val" style="font-size:12px;color:rgba(255,255,255,0.4);width:30px">60</span>
     </div>
 
     <button class="btn-live" id="live-btn" onclick="toggleCapture()">
-      🎧 시스템 오디오 캡처 시작
+      🎤 마이크 입력 시작
     </button>
 
     <div class="status-bar">
@@ -690,144 +725,174 @@ document.getElementById('text-input').addEventListener('keydown',e=>{ if(e.ctrlK
 // ══════════════════════════════
 //  LIVE AUDIO CAPTURE
 // ══════════════════════════════
-let liveCapturing=false;
-let audioCtx=null, analyser=null, freqData=null;
-let captureStream=null, animFrameId=null;
-const freqCanvas=document.getElementById('freq-canvas');
-const freqCtx=freqCanvas.getContext('2d');
-const levelBar=document.getElementById('level-bar');
-const levelBarWrap=document.getElementById('level-bar-wrap');
+let liveCapturing = false;
+let currentMethod = 'mic'; // 'mic' | 'screen'
+let audioCtx = null, analyser = null, freqData = null;
+let captureStream = null, animFrameId = null;
+const freqCanvas = document.getElementById('freq-canvas');
+const freqCtx = freqCanvas.getContext('2d');
+const levelBar = document.getElementById('level-bar');
+const levelBarWrap = document.getElementById('level-bar-wrap');
 
-document.getElementById('sensitivity').addEventListener('input',function(){
-  document.getElementById('sens-val').textContent=this.value;
+document.getElementById('sensitivity').addEventListener('input', function(){
+  document.getElementById('sens-val').textContent = this.value;
 });
 
-function setLiveStatus(text,mode){
-  document.getElementById('live-status').textContent=text;
-  const d=document.getElementById('live-dot'); d.className='dot '+(mode||'');
+function switchMethod(m) {
+  if (liveCapturing) stopCapture();
+  currentMethod = m;
+  document.getElementById('mtab-mic').classList.toggle('active', m === 'mic');
+  document.getElementById('mtab-screen').classList.toggle('active', m === 'screen');
+  document.getElementById('method-mic').style.display    = m === 'mic'    ? '' : 'none';
+  document.getElementById('method-screen').style.display = m === 'screen' ? '' : 'none';
+  const btn = document.getElementById('live-btn');
+  btn.textContent = m === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
+  btn.className = 'btn-live';
+  setLiveStatus('대기 중', '');
 }
 
-async function toggleCapture(){
-  if(liveCapturing){ stopCapture(); return; }
-  await startCapture();
-}
-
-async function startCapture(){
-  setLiveStatus('화면 공유 창 대기 중...','');
+async function refreshMics() {
   try {
-    // Request screen share with audio
-    captureStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { width: 1, height: 1, frameRate: 1 },
+    // Need at least one permission grant to enumerate labels
+    await navigator.mediaDevices.getUserMedia({ audio: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(()=>{});
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const sel = document.getElementById('mic-select');
+    sel.innerHTML = '';
+    devices.filter(d => d.kind === 'audioinput').forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      opt.textContent = d.label || '마이크 ' + d.deviceId.slice(0,6);
+      sel.appendChild(opt);
+    });
+  } catch(e) { console.warn(e); }
+}
+refreshMics();
+
+function setLiveStatus(text, mode) {
+  document.getElementById('live-status').textContent = text;
+  document.getElementById('live-dot').className = 'dot ' + (mode || '');
+}
+
+async function toggleCapture() {
+  if (liveCapturing) { stopCapture(); return; }
+  if (currentMethod === 'mic') await startMicCapture();
+  else await startScreenCapture();
+}
+
+// ── Mic input ──
+async function startMicCapture() {
+  setLiveStatus('마이크 권한 요청 중...', '');
+  try {
+    const deviceId = document.getElementById('mic-select').value;
+    const constraints = {
       audio: {
+        deviceId: deviceId ? { exact: deviceId } : undefined,
         echoCancellation: false,
         noiseSuppression: false,
-        sampleRate: 44100,
+        autoGainControl: false,
       }
-    });
-
-    // Check if audio track exists
-    const audioTracks = captureStream.getAudioTracks();
-    if(audioTracks.length === 0){
-      setLiveStatus('⚠️ 오디오 트랙 없음 — "시스템 오디오 공유" 체크 필요','error');
-      captureStream.getTracks().forEach(t=>t.stop());
-      captureStream=null;
-      return;
-    }
-
-    // Stop video tracks (not needed)
-    captureStream.getVideoTracks().forEach(t=>t.stop());
-
-    // Set up audio analysis
-    audioCtx = new AudioContext();
-    const source = audioCtx.createMediaStreamSource(captureStream);
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    analyser.smoothingTimeConstant = 0.75;
-    source.connect(analyser);
-    // Do NOT connect to destination → no echo
-
-    freqData = new Uint8Array(analyser.frequencyBinCount);
-
-    liveCapturing = true;
-    freqCanvas.classList.add('visible');
-    levelBarWrap.classList.add('visible');
-
-    const btn=document.getElementById('live-btn');
-    btn.textContent='⏹ 캡처 중지';
-    btn.className='btn-live capturing';
-    setLiveStatus('실시간 캡처 중 — AI 소리에 맞춰 입이 움직입니다','capturing');
-
-    // Listen for stream end (user stopped sharing)
+    };
+    captureStream = await navigator.mediaDevices.getUserMedia(constraints);
+    setupAnalyser(captureStream);
+    setCapturingUI('🎤 마이크 캡처 중 — AI 소리에 맞춰 입이 움직입니다', '🎤 캡처 중지');
     captureStream.getAudioTracks()[0].onended = () => stopCapture();
-
-    analyzeAudio();
-
   } catch(e) {
-    if(e.name==='NotAllowedError') setLiveStatus('공유가 취소되었습니다','');
-    else setLiveStatus('오류: '+e.message,'error');
+    if (e.name === 'NotAllowedError') setLiveStatus('❌ 마이크 권한이 거부되었습니다', 'error');
+    else setLiveStatus('오류: ' + e.message, 'error');
   }
 }
 
-function stopCapture(){
-  liveCapturing=false;
-  if(captureStream) { captureStream.getTracks().forEach(t=>t.stop()); captureStream=null; }
-  if(audioCtx) { audioCtx.close(); audioCtx=null; }
-  if(animFrameId) { cancelAnimationFrame(animFrameId); animFrameId=null; }
-  state.mouthTarget=0;
-  freqCanvas.classList.remove('visible');
-  levelBarWrap.classList.remove('visible');
-  const btn=document.getElementById('live-btn');
-  btn.textContent='🎧 시스템 오디오 캡처 시작';
-  btn.className='btn-live';
-  setLiveStatus('캡처 종료','');
+// ── Screen share ──
+async function startScreenCapture() {
+  setLiveStatus('화면 공유 창 대기 중 (AI 창을 선택하세요)...', '');
+  try {
+    captureStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { width: 1, height: 1, frameRate: 1 },
+      audio: { echoCancellation: false, noiseSuppression: false, sampleRate: 44100 }
+    });
+    if (captureStream.getAudioTracks().length === 0) {
+      setLiveStatus('⚠️ 오디오 없음 — "시스템 오디오 공유" 체크 후 다시 시도', 'error');
+      captureStream.getTracks().forEach(t => t.stop());
+      captureStream = null;
+      return;
+    }
+    captureStream.getVideoTracks().forEach(t => t.stop());
+    setupAnalyser(captureStream);
+    setCapturingUI('🖥️ 화면 공유 캡처 중 — AI 소리에 맞춰 입이 움직입니다', '⏹ 캡처 중지');
+    captureStream.getAudioTracks()[0].onended = () => stopCapture();
+  } catch(e) {
+    if (e.name === 'NotAllowedError') setLiveStatus('공유가 취소되었습니다', '');
+    else setLiveStatus('오류: ' + e.message, 'error');
+  }
 }
 
-function analyzeAudio(){
-  if(!liveCapturing){ return; }
-  animFrameId=requestAnimationFrame(analyzeAudio);
+function setupAnalyser(stream) {
+  audioCtx = new AudioContext();
+  const source = audioCtx.createMediaStreamSource(stream);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.78;
+  source.connect(analyser);
+  freqData = new Uint8Array(analyser.frequencyBinCount);
+  liveCapturing = true;
+  freqCanvas.classList.add('visible');
+  levelBarWrap.classList.add('visible');
+  analyzeAudio();
+}
 
+function setCapturingUI(statusText, btnText) {
+  setLiveStatus(statusText, 'capturing');
+  const btn = document.getElementById('live-btn');
+  btn.textContent = btnText;
+  btn.className = 'btn-live capturing';
+}
+
+function stopCapture() {
+  liveCapturing = false;
+  if (captureStream) { captureStream.getTracks().forEach(t => t.stop()); captureStream = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  state.mouthTarget = 0;
+  freqCanvas.classList.remove('visible');
+  levelBarWrap.classList.remove('visible');
+  const btn = document.getElementById('live-btn');
+  btn.textContent = currentMethod === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
+  btn.className = 'btn-live';
+  setLiveStatus('캡처 종료', '');
+}
+
+function analyzeAudio() {
+  if (!liveCapturing) return;
+  animFrameId = requestAnimationFrame(analyzeAudio);
   analyser.getByteFrequencyData(freqData);
 
-  // Calculate energy in speech band (200 Hz – 4000 Hz)
   const sampleRate = audioCtx.sampleRate;
   const binSize = sampleRate / analyser.fftSize;
   const lo = Math.max(1, Math.floor(200 / binSize));
-  const hi = Math.min(freqData.length-1, Math.floor(4000 / binSize));
-  let sum=0;
-  for(let i=lo; i<=hi; i++) sum+=freqData[i];
-  const avg = sum / (hi-lo+1);
+  const hi = Math.min(freqData.length - 1, Math.floor(4000 / binSize));
+  let sum = 0;
+  for (let i = lo; i <= hi; i++) sum += freqData[i];
+  const avg = sum / (hi - lo + 1);
 
-  // Map to mouth openness
   const sensitivity = parseFloat(document.getElementById('sensitivity').value);
   const rawOpen = Math.min(avg / sensitivity, 1.0);
-  // Apply a curve so small sounds = barely open, loud = wide open
-  const mapped = Math.pow(rawOpen, 0.7);
-  state.mouthTarget = mapped;
-
-  // Level bar
-  levelBar.style.width = (mapped*100)+'%';
-
-  // Frequency visualizer
+  state.mouthTarget = Math.pow(rawOpen, 0.65);
+  levelBar.style.width = (state.mouthTarget * 100) + '%';
   drawFreqViz();
 }
 
-function drawFreqViz(){
-  const fw=freqCanvas.width, fh=freqCanvas.height;
-  freqCtx.clearRect(0,0,fw,fh);
-  freqCtx.fillStyle='rgba(0,0,0,0)';
-  freqCtx.fillRect(0,0,fw,fh);
-
-  const barW=Math.ceil(fw/80);
-  const step=Math.floor(freqData.length/80);
-
-  for(let i=0;i<80;i++){
-    let val=0;
-    for(let j=0;j<step;j++) val+=freqData[i*step+j];
-    val/=step;
-    const barH=(val/255)*fh;
-    const hue=200+i*1.5;
-    freqCtx.fillStyle=`hsla(${hue},80%,65%,0.85)`;
-    freqCtx.fillRect(i*barW, fh-barH, barW-1, barH);
+function drawFreqViz() {
+  const fw = freqCanvas.width, fh = freqCanvas.height;
+  freqCtx.clearRect(0, 0, fw, fh);
+  const barW = Math.ceil(fw / 80);
+  const step = Math.floor(freqData.length / 80);
+  for (let i = 0; i < 80; i++) {
+    let val = 0;
+    for (let j = 0; j < step; j++) val += freqData[i * step + j];
+    val /= step;
+    const barH = (val / 255) * fh;
+    freqCtx.fillStyle = `hsla(${200 + i * 1.5},80%,65%,0.85)`;
+    freqCtx.fillRect(i * barW, fh - barH, barW - 1, barH);
   }
 }
 
