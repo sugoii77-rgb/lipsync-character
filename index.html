@@ -301,8 +301,8 @@ async function loadAvatars(){
     const sel=document.getElementById('avatar-sel');
     sel.innerHTML='<option value="">— 아바타 선택 —</option>';
     avs.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.name;o.dataset.img=a.preview_url||'';o.dataset.voice=a.default_voice?.id||'';sel.appendChild(o);});
-    if(avs.length){sel.value=avs[0].id;updateAvPreview();}
     await loadVoices();
+    if(avs.length){sel.value=avs[0].id;updateAvPreview();}
     setLAStatus(`아바타 ${avs.length}개 로드 완료 — 연결 시작을 누르세요`,'');
   }catch(e){setLAStatus('로드 실패: '+e.message,'error');}
 }
@@ -334,17 +334,24 @@ async function connectLA(){
 
   showLoading('세션 토큰 발급 중...');setPill('connecting');setLAStatus('연결 중...','');
   try{
+    const key=getKey();
+    console.log('[LA] key prefix:', key.slice(0,8), 'avatar:', avatarId, 'voice:', voiceId);
+
     // 1. Get session token
-    const tr=await laFetch('/v1/sessions/token',{method:'POST',body:JSON.stringify({mode:'LITE',avatar_id:avatarId,voice_id:voiceId||undefined})});
+    const tokenBody={mode:'LITE',avatar_id:avatarId};
+    if(voiceId) tokenBody.voice_id=voiceId;
+    const tr=await laFetch('/v1/sessions/token',{method:'POST',body:JSON.stringify(tokenBody)});
     const td=await tr.json();
-    if(td.code!==1000)throw new Error(td.message||'토큰 발급 실패');
+    console.log('[LA] token response:', td);
+    if(td.code!==1000)throw new Error(`[${td.code}] ${td.message||'토큰 발급 실패'}`);
     const{session_id,session_token}=td.data;
 
     // 2. Start session → get LiveKit info
     showLoading('LiveKit 세션 시작 중...');
     const sr=await laFetchBearer('/v1/sessions/start',session_token,{method:'POST',body:JSON.stringify({session_token})});
     const sd=await sr.json();
-    if(sd.code!==1000)throw new Error(sd.message||'세션 시작 실패');
+    console.log('[LA] start response:', sd);
+    if(sd.code!==1000)throw new Error(`[${sd.code}] ${sd.message||'세션 시작 실패'}`);
     const{livekit_url,livekit_client_token,ws_url}=sd.data;
 
     laSession={session_id,session_token,ws_url};
