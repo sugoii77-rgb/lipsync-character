@@ -149,7 +149,11 @@ input[type=range] { flex:1; accent-color:#c084fc; cursor:pointer; }
   <div class="pb" id="la-pb">
     <div>
       <label style="display:block;margin-bottom:5px">LiveAvatar API Key <span style="color:rgba(255,255,255,0.3);font-size:11px">(app.liveavatar.com/developers)</span></label>
-      <input type="password" id="api-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off">
+      <div style="display:flex;gap:6px">
+        <input type="text" id="api-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" style="flex:1;font-family:monospace;font-size:12px">
+        <button class="btn-s" style="padding:8px 10px;font-size:12px;white-space:nowrap" onclick="clearKey()">🗑 초기화</button>
+      </div>
+      <div id="key-hint" style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:-4px">LiveAvatar 키: 60518bc0-xxxx-xxxx-xxxx-xxxxxxxxxxxx 형식</div>
     </div>
     <div class="row">
       <div id="av-prev" class="avatar-prev" style="display:none">
@@ -275,8 +279,16 @@ function charV(ch){const c=ch.charCodeAt(0);if(c>=0xAC00&&c<=0xD7A3){const j=Mat
 const LA_PROXY = '/api/heygen';
 let laConnected=false, laSession=null, laRoom=null, laSpeakWs=null;
 
-function getKey(){return document.getElementById('api-key').value.trim()||localStorage.getItem('la_key')||'';}
-function saveKey(k){if(k)localStorage.setItem('la_key',k);}
+function getKey(){return document.getElementById('api-key').value.trim();}
+function saveKey(k){if(k){localStorage.setItem('la_key',k);}}
+function clearKey(){
+  document.getElementById('api-key').value='';
+  localStorage.removeItem('la_key');
+  localStorage.removeItem('hg_api_key');
+  document.getElementById('avatar-sel').innerHTML='<option value="">— API Key 입력 후 로드 —</option>';
+  document.getElementById('av-prev').style.display='none';
+  setLAStatus('초기화됨 — LiveAvatar API Key를 다시 입력하세요','');
+}
 
 async function laFetch(path,opts={}){
   const key=getKey();
@@ -336,6 +348,12 @@ async function connectLA(){
   try{
     const key=getKey();
     console.log('[LA] key prefix:', key.slice(0,8), 'avatar:', avatarId, 'voice:', voiceId);
+    // Detect wrong key type
+    if(key.startsWith('sk_')||key.length<30){
+      hideLoading();setPill('error');
+      setLAStatus('❌ HeyGen 키가 입력되어 있습니다! LiveAvatar 키(UUID 형식)를 입력하세요','error');
+      return;
+    }
 
     // 1. Get session token
     const tokenBody={mode:'LITE',avatar_id:avatarId};
