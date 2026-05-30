@@ -463,14 +463,79 @@ function onLADisconnected(){
   setPill('');setLAStatus('연결 해제됨','');
 }
 
+// ── LiveKit 오디오 publish (LITE 모드 립싱크 핵심) ──
+let localAudioTrack = null;
+let ttsAudioCtx = null;
+let masterGain = null;
+
+async function ensureLKAudio() {
+  if (localAudioTrack && laRoom) return;
+  ttsAudioCtx = new AudioContext();
+  const dest = ttsAudioCtx.createMediaStreamDestination();
+  masterGain = ttsAudioCtx.createGain();
+  masterGain.gain.value = 1.0;
+  masterGain.connect(dest);
+
+  const { LocalAudioTrack } = LivekitClient;
+  const rawTrack = dest.stream.getAudioTracks()[0];
+  localAudioTrack = new LocalAudioTrack(rawTrack, undefined, false);
+  await laRoom.localParticipant.publishTrack(localAudioTrack);
+  ttsAudioCtx._dest = dest;
+  console.log('[LK] local audio track published');
+}
+
+async function playTTSToLiveKit(text) {
+  await ensureLKAudio();
+
+  // Speech-like oscillator: avatar lip-syncs to this
+  const osc = ttsAudioCtx.createOscillator();
+  const ampEnv = ttsAudioCtx.createGain();
+  const lfo = ttsAudioCtx.createOscillator();
+  const lfoGain = ttsAudioCtx.createGain();
+
+  osc.type = 'sawtooth';
+  osc.frequency.value = 180;
+  lfo.frequency.value = 9; // ~9Hz = syllable rate
+  lfoGain.gain.value = 0.4;
+
+  lfo.connect(lfoGain);
+  lfoGain.connect(ampEnv.gain);
+  ampEnv.gain.value = 0.5;
+  osc.connect(ampEnv);
+  ampEnv.connect(masterGain);
+
+  osc.start(); lfo.start();
+
+  // Browser TTS for user to hear
+  await new Promise(resolve => {
+    const utt = new SpeechSynthesisUtterance(text);
+    const voices = speechSynthesis.getVoices();
+    const vi = parseInt(document.getElementById('fbv-sel')?.value);
+    if (!isNaN(vi) && voices[vi]) utt.voice = voices[vi];
+    utt.rate = 1.0; utt.pitch = 1.1;
+    utt.onend = resolve; utt.onerror = resolve;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(utt);
+  });
+
+  osc.stop(); lfo.stop();
+}
+
 async function laSpeakText(text){
-  if(!laConnected)return false;
-  // Try via WebSocket first
-  if(laSpeakWs&&laSpeakWs.readyState===WebSocket.OPEN){
-    laSpeakWs.send(JSON.stringify({type:'talk',text,task_type:'talk'}));
-    return true;
+  if(!laConnected) return false;
+  // Also try WebSocket (server-side TTS via HeyGen)
+  if(laSpeakWs && laSpeakWs.readyState===WebSocket.OPEN){
+    laSpeakWs.send(JSON.stringify({
+      type:'talk', text, task_type:'talk',
+      voice_setting:{ voice_id: document.getElementById('voice-sel').value||undefined, rate:1.0 }
+    }));
   }
-  return false;
+  // Always publish TTS audio to LiveKit for lip-sync
+  playTTSToLiveKit(text).then(()=>{
+    setTTSStatus('완료 ✓','');
+    setTimeout(()=>setTTSStatus('준비됨',''),2000);
+  });
+  return true;
 }
 
 function showLoading(msg){const o=document.getElementById('loading-overlay');o.querySelector('#loading-text').textContent=msg;o.classList.add('show');}
