@@ -7,199 +7,299 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background: #0d0d1a;
-  color: #fff;
+  background: #0d0d1a; color: #fff;
   font-family: 'Segoe UI', Tahoma, sans-serif;
   display: flex; flex-direction: column; align-items: center;
-  min-height: 100vh; padding: 20px 16px; gap: 16px;
+  min-height: 100vh; padding: 16px; gap: 14px;
 }
 h1 {
-  font-size: 20px; font-weight: 700;
+  font-size: 19px; font-weight: 700;
   background: linear-gradient(135deg, #c084fc, #60a5fa, #f472b6);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-#character-container {
+
+/* ── Character container ── */
+#char-wrap {
   width: 400px; height: 440px; border-radius: 24px;
   border: 1px solid rgba(192,132,252,0.2);
-  box-shadow: 0 0 60px rgba(192,132,252,0.1); overflow: hidden; position: relative;
+  box-shadow: 0 0 60px rgba(192,132,252,0.1);
+  overflow: hidden; position: relative; background: #131325;
 }
-canvas { display: block; }
-#level-bar-wrap {
-  position: absolute; bottom: 12px; left: 12px; right: 12px;
-  height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px;
-  overflow: hidden; opacity: 0; transition: opacity 0.3s;
+#canvas { position: absolute; top: 0; left: 0; display: block; transition: opacity 0.5s; }
+#hg-video {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; transition: opacity 0.6s; pointer-events: none;
 }
-#level-bar-wrap.visible { opacity: 1; }
-#level-bar {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, #60a5fa, #c084fc, #f472b6);
-  border-radius: 3px; transition: width 0.04s;
+#hg-video.visible { opacity: 1; }
+#canvas.hidden { opacity: 0; pointer-events: none; }
+
+#conn-badge {
+  position: absolute; top: 12px; left: 12px;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 12px; font-weight: 600; display: none; align-items: center; gap: 6px;
 }
+#conn-badge.show { display: flex; }
+#conn-badge .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: blink .9s ease-in-out infinite; }
+
+#loading-overlay {
+  position: absolute; inset: 0; background: rgba(13,13,26,0.85);
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  font-size: 14px; color: rgba(255,255,255,0.7);
+}
+#loading-overlay.show { display: flex; }
+.spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid rgba(192,132,252,0.3);
+  border-top-color: #c084fc;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* ── Panels ── */
 .panel {
   width: 400px; background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; overflow: hidden;
 }
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 16px; cursor: pointer; user-select: none;
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.panel-header:hover { background: rgba(255,255,255,0.03); }
+.panel-header .chevron { transition: transform 0.2s; font-size: 11px; }
+.panel-header.open .chevron { transform: rotate(180deg); }
+.panel-body { padding: 14px; display: flex; flex-direction: column; gap: 11px; }
+.panel-body.collapsed { display: none; }
+
+/* HeyGen status indicator in header */
+.hg-status-pill {
+  font-size: 11px; padding: 3px 9px; border-radius: 10px; font-weight: 600;
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4);
+}
+.hg-status-pill.connected { background: rgba(74,222,128,0.15); color: #4ade80; }
+.hg-status-pill.connecting { background: rgba(251,191,36,0.15); color: #fbbf24; }
+.hg-status-pill.error { background: rgba(248,113,113,0.15); color: #f87171; }
+
+/* ── Tabs ── */
 .tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .tab {
-  flex: 1; padding: 13px; text-align: center; font-size: 13px; font-weight: 600;
-  cursor: pointer; color: rgba(255,255,255,0.4); transition: all 0.2s; border: none; background: none;
+  flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600;
+  cursor: pointer; color: rgba(255,255,255,0.38); border: none; background: none; transition: all 0.2s;
 }
 .tab.active { color: #c084fc; border-bottom: 2px solid #c084fc; margin-bottom: -1px; }
-.tab-body { display: none; padding: 16px; flex-direction: column; gap: 12px; }
+.tab-body { display: none; padding: 14px; flex-direction: column; gap: 11px; }
 .tab-body.active { display: flex; }
+
+/* ── Form elements ── */
 textarea {
   width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.3);
-  border-radius: 12px; color: #fff; padding: 11px 13px; font-size: 13.5px;
-  line-height: 1.6; resize: vertical; min-height: 80px; font-family: inherit; transition: border-color 0.2s;
+  border-radius: 11px; color: #fff; padding: 10px 12px; font-size: 13.5px;
+  line-height: 1.6; resize: vertical; min-height: 78px; font-family: inherit; transition: border-color 0.2s;
 }
 textarea:focus { outline: none; border-color: #c084fc; }
 textarea::placeholder { color: rgba(255,255,255,0.28); }
-.row { display: flex; gap: 10px; align-items: center; }
+input[type=text], input[type=password] {
+  width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.25);
+  border-radius: 10px; color: #fff; padding: 9px 12px; font-size: 13px; font-family: inherit;
+}
+input[type=text]:focus, input[type=password]:focus { outline: none; border-color: #c084fc; }
+input::placeholder { color: rgba(255,255,255,0.28); }
+.row { display: flex; gap: 9px; align-items: center; }
 select {
-  flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.3);
-  border-radius: 10px; color: #fff; padding: 8px 11px; font-size: 12.5px; cursor: pointer;
+  flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(192,132,252,0.25);
+  border-radius: 10px; color: #fff; padding: 8px 10px; font-size: 12.5px; cursor: pointer;
 }
 select:focus { outline: none; border-color: #c084fc; }
 select option { background: #1a1a2e; }
 label { font-size: 12px; color: rgba(255,255,255,0.45); white-space: nowrap; }
+
+/* ── Buttons ── */
 button {
-  padding: 11px 16px; border: none; border-radius: 12px;
-  font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  padding: 10px 15px; border: none; border-radius: 11px;
+  font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.18s;
 }
-.btn-primary {
-  flex: 1; background: linear-gradient(135deg, #c084fc, #818cf8); color: #fff;
-  box-shadow: 0 4px 18px rgba(192,132,252,0.28);
-}
-.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-primary { flex: 1; background: linear-gradient(135deg,#c084fc,#818cf8); color:#fff; box-shadow: 0 4px 16px rgba(192,132,252,0.25); }
+.btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-primary:disabled { opacity:0.4; cursor:default; transform:none; }
 .btn-primary.speaking { background: linear-gradient(135deg,#f472b6,#c084fc); animation: pulse 1.2s ease-in-out infinite; }
-.btn-stop { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.65); border: 1px solid rgba(255,255,255,0.1); }
-.btn-stop:hover { background: rgba(255,255,255,0.12); }
+.btn-green { background: linear-gradient(135deg,#34d399,#059669); color:#fff; flex:1; }
+.btn-green:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-stop { background: rgba(255,255,255,0.07); color:rgba(255,255,255,0.65); border:1px solid rgba(255,255,255,0.1); }
+.btn-stop:hover { background:rgba(255,255,255,0.12); }
 .btn-live {
-  width: 100%; padding: 14px; background: linear-gradient(135deg,#34d399,#059669);
-  color: #fff; font-size: 14px; box-shadow: 0 4px 18px rgba(52,211,153,0.25); border-radius: 14px;
+  width:100%; padding:13px; border-radius:13px; font-size:14px;
+  background: linear-gradient(135deg,#34d399,#059669); color:#fff;
+  box-shadow: 0 4px 16px rgba(52,211,153,0.22);
 }
-.btn-live:hover { opacity: 0.9; transform: translateY(-1px); }
-.btn-live.capturing { background: linear-gradient(135deg,#f87171,#dc2626); animation: pulse 1s ease-in-out infinite; }
+.btn-live:hover { opacity:0.9; transform:translateY(-1px); }
+.btn-live.capturing { background: linear-gradient(135deg,#f87171,#dc2626); animation:pulse 1s ease-in-out infinite; }
+
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
-.info-box {
-  background: rgba(96,165,250,0.08); border: 1px solid rgba(96,165,250,0.2);
-  border-radius: 12px; padding: 12px 14px; font-size: 12.5px; line-height: 1.7; color: rgba(255,255,255,0.65);
-}
-.info-box strong { color: #93c5fd; }
-.info-box ol { padding-left: 16px; margin-top: 6px; }
-.info-box li { margin-bottom: 3px; }
-.method-tabs { display: flex; gap: 8px; }
+
+/* ── Status bar ── */
+.status-bar { display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.38); }
+.dot { width:7px; height:7px; border-radius:50%; background:#4ade80; flex-shrink:0; }
+.dot.speaking { background:#f472b6; animation:blink .8s ease-in-out infinite; }
+.dot.capturing { background:#34d399; animation:blink .6s ease-in-out infinite; }
+.dot.error { background:#f87171; }
+
+/* ── Live audio ── */
+.method-tabs { display:flex; gap:8px; }
 .mtab {
-  flex: 1; padding: 9px; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  flex:1; padding:8px; border:1px solid rgba(255,255,255,0.1);
+  border-radius:9px; background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.5); font-size:12.5px; font-weight:600; cursor:pointer; transition:all 0.2s;
 }
-.mtab.active { background: rgba(192,132,252,0.15); border-color: #c084fc; color: #c084fc; }
-.slider-row { display: flex; align-items: center; gap: 10px; }
-input[type=range] { flex: 1; accent-color: #c084fc; cursor: pointer; }
-.slider-val { font-size: 12px; color: rgba(255,255,255,0.4); width: 28px; text-align: right; }
-.status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.38); }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
-.dot.speaking { background: #f472b6; animation: blink .8s ease-in-out infinite; }
-.dot.capturing { background: #34d399; animation: blink .6s ease-in-out infinite; }
-.dot.error { background: #f87171; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-#freq-canvas { width: 100%; height: 46px; border-radius: 8px; background: rgba(0,0,0,0.2); display: none; }
-#freq-canvas.visible { display: block; }
+.mtab.active { background:rgba(192,132,252,0.15); border-color:#c084fc; color:#c084fc; }
+.info-box {
+  background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.18);
+  border-radius:11px; padding:11px 13px; font-size:12.5px; line-height:1.7; color:rgba(255,255,255,0.62);
+}
+.info-box strong { color:#93c5fd; }
+.info-box ol { padding-left:16px; margin-top:5px; }
+.info-box li { margin-bottom:2px; }
+.slider-row { display:flex; align-items:center; gap:9px; }
+input[type=range] { flex:1; accent-color:#c084fc; cursor:pointer; }
+.sv { font-size:12px; color:rgba(255,255,255,0.38); width:26px; text-align:right; }
+#freq-canvas { width:100%; height:44px; border-radius:8px; background:rgba(0,0,0,0.2); display:none; }
+#freq-canvas.visible { display:block; }
+#level-bar-wrap {
+  position:absolute; bottom:10px; left:10px; right:10px;
+  height:4px; background:rgba(255,255,255,0.07); border-radius:2px; overflow:hidden; opacity:0; transition:opacity 0.3s;
+}
+#level-bar-wrap.visible { opacity:1; }
+#level-bar { height:100%; width:0%; background:linear-gradient(90deg,#60a5fa,#c084fc,#f472b6); transition:width 0.04s; }
+
+/* Avatar grid preview */
+.avatar-preview { display:flex; align-items:center; gap:10px; }
+.avatar-thumb { width:48px; height:48px; border-radius:10px; object-fit:cover; border:2px solid rgba(192,132,252,0.3); }
+.avatar-info { font-size:12px; color:rgba(255,255,255,0.5); }
+.avatar-info strong { color:#fff; font-size:13px; display:block; }
 </style>
 </head>
 <body>
 
-<h1>✨ AI 립싱크 캐릭터</h1>
+<h1>✨ AI 립싱크 — HeyGen 연동</h1>
 
-<div id="character-container">
+<!-- ── Character Display ── -->
+<div id="char-wrap">
   <canvas id="canvas" width="400" height="440"></canvas>
+  <video id="hg-video" autoplay playsinline muted></video>
+  <div id="conn-badge"><span class="dot-live"></span><span id="badge-text">HeyGen 연결됨</span></div>
+  <div id="loading-overlay"><div class="spinner"></div><span id="loading-text">HeyGen 연결 중...</span></div>
   <div id="level-bar-wrap"><div id="level-bar"></div></div>
 </div>
 
+<!-- ── HeyGen Settings ── -->
+<div class="panel" id="hg-panel">
+  <div class="panel-header open" id="hg-header" onclick="toggleHGPanel()">
+    <span>⚡ HeyGen 설정</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="hg-status-pill" id="hg-pill">미연결</span>
+      <span class="chevron">▼</span>
+    </div>
+  </div>
+  <div class="panel-body" id="hg-body">
+    <div>
+      <label style="display:block;margin-bottom:5px">API Key</label>
+      <input type="password" id="api-key" placeholder="sk_...  (입력 후 아바타 로드)" autocomplete="off">
+    </div>
+    <div class="row" id="avatar-row">
+      <div id="avatar-preview-wrap" class="avatar-preview" style="display:none">
+        <img class="avatar-thumb" id="avatar-thumb" src="" alt="">
+        <div class="avatar-info"><strong id="avatar-preview-name"></strong>선택됨</div>
+      </div>
+      <select id="avatar-select" style="flex:1"><option value="">— API Key 입력 후 로드 —</option></select>
+      <button class="btn-stop" style="padding:8px 10px;font-size:12px" onclick="loadAvatars()" title="새로고침">↻</button>
+    </div>
+    <div class="row">
+      <label>음성</label>
+      <select id="hg-voice-select"><option value="">로딩...</option></select>
+    </div>
+    <div class="row">
+      <button class="btn-green" id="connect-btn" onclick="connectHeyGen()">▶ 연결 시작</button>
+      <button class="btn-stop" onclick="disconnectHeyGen()">■ 연결 해제</button>
+    </div>
+    <div class="status-bar">
+      <div class="dot" id="hg-dot"></div>
+      <span id="hg-status">API Key를 입력하고 아바타를 선택하세요</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Controls ── -->
 <div class="panel">
   <div class="tabs">
     <button class="tab active" onclick="switchTab('tts')">🎙️ TTS 모드</button>
     <button class="tab" onclick="switchTab('live')">🔴 Live 모드</button>
   </div>
 
-  <!-- TTS TAB -->
+  <!-- TTS -->
   <div class="tab-body active" id="tab-tts">
-    <textarea id="text-input" placeholder="여기에 텍스트 입력... (Ctrl+Enter)">안녕하세요! 저는 AI 립싱크 캐릭터예요. 말하기 버튼을 눌러보세요!</textarea>
-    <div class="row">
-      <label>목소리</label>
-      <select id="voice-select"><option value="-1">로딩 중...</option></select>
-    </div>
-    <div class="row">
-      <label>속도</label>
-      <select id="speed-select">
-        <option value="0.7">느리게</option>
-        <option value="0.85">약간 느리게</option>
-        <option value="1.0" selected>기본</option>
-        <option value="1.2">빠르게</option>
-        <option value="1.5">매우 빠르게</option>
-      </select>
-      <label>음정</label>
-      <select id="pitch-select">
-        <option value="0.8">낮게</option>
-        <option value="1.0">기본</option>
-        <option value="1.2" selected>높게</option>
-        <option value="1.5">매우 높게</option>
-      </select>
+    <textarea id="text-input" placeholder="텍스트를 입력하세요... (Ctrl+Enter)&#10;HeyGen 연결 시: 포토리얼리스틱 아바타가 말합니다&#10;미연결 시: 애니메이션 캐릭터 + 브라우저 TTS">안녕하세요! HeyGen AI 아바타예요. 무엇이든 물어보세요!</textarea>
+    <!-- Fallback TTS options (shown only when HeyGen not connected) -->
+    <div id="fallback-opts">
+      <div class="row">
+        <label>목소리</label>
+        <select id="voice-select"><option value="-1">로딩 중...</option></select>
+        <label>속도</label>
+        <select id="speed-select">
+          <option value="0.8">느리게</option>
+          <option value="1.0" selected>기본</option>
+          <option value="1.2">빠르게</option>
+          <option value="1.5">매우 빠르게</option>
+        </select>
+      </div>
     </div>
     <div class="row">
       <button class="btn-primary" id="speak-btn" onclick="speak()">🎙️ 말하기</button>
-      <button class="btn-stop" onclick="stopTTS()">⏹ 멈추기</button>
+      <button class="btn-stop" onclick="stopSpeaking()">⏹ 멈추기</button>
     </div>
     <div class="status-bar">
       <div class="dot" id="tts-dot"></div>
-      <span id="tts-status">준비됨 — Ctrl+Enter로 말하기</span>
+      <span id="tts-status">준비됨</span>
     </div>
   </div>
 
-  <!-- LIVE TAB -->
+  <!-- Live -->
   <div class="tab-body" id="tab-live">
     <div class="method-tabs">
       <button class="mtab active" id="mtab-mic" onclick="switchMethod('mic')">🎤 마이크 입력</button>
       <button class="mtab" id="mtab-screen" onclick="switchMethod('screen')">🖥️ 화면 공유</button>
     </div>
-
     <div id="method-mic">
       <div class="info-box">
-        <strong>마이크/오디오 장치 선택 (권장)</strong><br>
-        장치를 선택하고 시작하면 즉시 사용 가능합니다.<br>
-        <strong>PC 전체 소리:</strong> Windows 설정 → 사운드 → 녹음 →
-        <span style="color:#93c5fd">스테레오 믹스 활성화</span> 후 아래에서 선택
+        <strong>PC 오디오에 실시간 립싱크 (캔버스 캐릭터)</strong><br>
+        스테레오 믹스 활성화 시 PC 전체 소리 캡처 가능.<br>
+        HeyGen은 텍스트 입력 기반 → Live는 캔버스 캐릭터 사용.
       </div>
       <div class="row">
         <label>입력 장치</label>
         <select id="mic-select"><option value="">기본 마이크</option></select>
-        <button class="btn-stop" style="padding:8px 12px;font-size:12px" onclick="refreshMics()">↻</button>
+        <button class="btn-stop" style="padding:7px 10px;font-size:12px" onclick="refreshMics()">↻</button>
       </div>
     </div>
-
     <div id="method-screen" style="display:none">
       <div class="info-box">
-        <strong>화면 공유로 시스템 오디오 캡처</strong><br>
-        ⚠️ <strong>이 캐릭터 창이 아닌</strong> AI가 말하는 다른 창을 선택하세요.<br>
+        ⚠️ <strong>이 창이 아닌</strong> AI가 말하는 다른 창을 선택하세요.<br>
         <ol>
-          <li>ChatGPT·Claude 등 AI 탭 또는 전체 화면 선택</li>
+          <li>다른 AI 탭 / 전체 화면 선택</li>
           <li><strong>"시스템 오디오 공유"</strong> 체크 ✓</li>
           <li>공유 클릭</li>
         </ol>
       </div>
     </div>
-
-    <canvas id="freq-canvas" width="368" height="46"></canvas>
-
+    <canvas id="freq-canvas" width="368" height="44"></canvas>
     <div class="slider-row">
       <label>민감도</label>
       <input type="range" id="sensitivity" min="15" max="180" value="55">
-      <span class="slider-val" id="sens-val">55</span>
+      <span class="sv" id="sens-val">55</span>
     </div>
-
     <button class="btn-live" id="live-btn" onclick="toggleCapture()">🎤 마이크 입력 시작</button>
-
     <div class="status-bar">
       <div class="dot" id="live-dot"></div>
       <span id="live-status">대기 중</span>
@@ -208,746 +308,551 @@ input[type=range] { flex: 1; accent-color: #c084fc; cursor: pointer; }
 </div>
 
 <script>
-// ════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════
+// ═══════════════════════════════════════════════
+//  CANVAS CHARACTER (fallback)
+// ═══════════════════════════════════════════════
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const W = 400, H = 440, CX = W / 2, CY = H / 2 - 10;
 
 const st = {
-  // Mouth: 2-axis
-  open: 0, openTarget: 0,        // 0=closed → 1=max open (jaw drop)
-  wide: 0.5, wideTarget: 0.5,    // 0=pursed(O/U) → 1=wide(A/E/I)
-  // Eye
+  open: 0, openTarget: 0,
+  wide: 0.5, wideTarget: 0.5,
   blink: 0, blinkTimer: 2200, blinking: false,
   glanceX: 0, glanceTimer: 0,
-  // Body
   bobTimer: 0, breathTimer: 0,
-  speaking: false,
-  cheekAlpha: 0.28,
+  speaking: false, cheekAlpha: 0.28,
 };
+function lerp(a,b,t){return a+(b-a)*Math.min(t,1);}
+function easeOut(t){return 1-Math.pow(1-t,3);}
 
-function lerp(a, b, t) { return a + (b - a) * Math.min(t, 1); }
-function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
-
-// ════════════════════════════════════════
-//  DRAW
-// ════════════════════════════════════════
-function render() {
-  ctx.clearRect(0, 0, W, H);
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#131325'); bg.addColorStop(1, '#0d0d1a');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(CX, CY - 30, 20, CX, CY - 30, 210);
-  glow.addColorStop(0, 'rgba(192,132,252,0.07)'); glow.addColorStop(1, 'transparent');
-  ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
-
-  const bob    = Math.sin(st.bobTimer)    * (st.speaking ? 2.2 : 0.7);
-  const breath = Math.sin(st.breathTimer) * 1.1;
-  ctx.save(); ctx.translate(0, bob + breath);
-
-  drawBody(); drawNeck(); drawHairBack();
-  drawFace(); drawEars();
-  drawEyebrows(); drawEyes(); drawNose(); drawMouth(); drawCheeks();
-  drawHairFront(); drawAccessory();
-
+/* ── render ── */
+function render(){
+  ctx.clearRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#131325');bg.addColorStop(1,'#0d0d1a');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  const glow=ctx.createRadialGradient(CX,CY-30,20,CX,CY-30,210);
+  glow.addColorStop(0,'rgba(192,132,252,0.07)');glow.addColorStop(1,'transparent');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+  const bob=Math.sin(st.bobTimer)*(st.speaking?2.2:0.7);
+  const breath=Math.sin(st.breathTimer)*1.1;
+  ctx.save();ctx.translate(0,bob+breath);
+  drawBody();drawNeck();drawHairBack();
+  drawFace();drawEars();drawEyebrows();drawEyes();
+  drawNose();drawMouth();drawCheeks();drawHairFront();drawAccessory();
   ctx.restore();
 }
-
-/* ── Body ── */
-function drawBody() {
+function drawBody(){
   ctx.save();
-  const g = ctx.createLinearGradient(CX - 110, CY + 100, CX + 110, H);
-  g.addColorStop(0, '#4c3a9e'); g.addColorStop(1, '#2d1f7a');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(CX - 110, H);
-  ctx.quadraticCurveTo(CX - 120, CY + 140, CX - 70, CY + 95);
-  ctx.quadraticCurveTo(CX - 30, CY + 80, CX, CY + 78);
-  ctx.quadraticCurveTo(CX + 30, CY + 80, CX + 70, CY + 95);
-  ctx.quadraticCurveTo(CX + 120, CY + 140, CX + 110, H);
-  ctx.closePath(); ctx.fill();
-
-  // Collar
-  ctx.fillStyle = '#f5f5ff';
-  ctx.beginPath();
-  ctx.moveTo(CX - 28, CY + 93); ctx.lineTo(CX, CY + 130); ctx.lineTo(CX + 28, CY + 93);
-  ctx.lineTo(CX + 18, CY + 87); ctx.lineTo(CX, CY + 108); ctx.lineTo(CX - 18, CY + 87);
-  ctx.closePath(); ctx.fill();
-  const lc = ctx.createLinearGradient(CX - 70, 0, CX - 18, 0);
-  lc.addColorStop(0, '#e0dff8'); lc.addColorStop(1, '#c8c7ee');
-  ctx.fillStyle = lc;
-  ctx.beginPath();
-  ctx.moveTo(CX - 65, CY + 87); ctx.lineTo(CX - 18, CY + 87);
-  ctx.lineTo(CX, CY + 130); ctx.lineTo(CX - 75, CY + 108); ctx.closePath(); ctx.fill();
-  const rc = ctx.createLinearGradient(CX + 18, 0, CX + 70, 0);
-  rc.addColorStop(0, '#c8c7ee'); rc.addColorStop(1, '#b8b7de');
-  ctx.fillStyle = rc;
-  ctx.beginPath();
-  ctx.moveTo(CX + 65, CY + 87); ctx.lineTo(CX + 18, CY + 87);
-  ctx.lineTo(CX, CY + 130); ctx.lineTo(CX + 75, CY + 108); ctx.closePath(); ctx.fill();
+  const g=ctx.createLinearGradient(CX-110,CY+100,CX+110,H);
+  g.addColorStop(0,'#4c3a9e');g.addColorStop(1,'#2d1f7a');
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.moveTo(CX-110,H);
+  ctx.quadraticCurveTo(CX-120,CY+140,CX-70,CY+95);
+  ctx.quadraticCurveTo(CX-30,CY+80,CX,CY+78);
+  ctx.quadraticCurveTo(CX+30,CY+80,CX+70,CY+95);
+  ctx.quadraticCurveTo(CX+120,CY+140,CX+110,H);
+  ctx.closePath();ctx.fill();
+  ctx.fillStyle='#f5f5ff';
+  ctx.beginPath();ctx.moveTo(CX-28,CY+93);ctx.lineTo(CX,CY+130);ctx.lineTo(CX+28,CY+93);
+  ctx.lineTo(CX+18,CY+87);ctx.lineTo(CX,CY+108);ctx.lineTo(CX-18,CY+87);ctx.closePath();ctx.fill();
+  const lc=ctx.createLinearGradient(CX-70,0,CX-18,0);lc.addColorStop(0,'#e0dff8');lc.addColorStop(1,'#c8c7ee');
+  ctx.fillStyle=lc;ctx.beginPath();ctx.moveTo(CX-65,CY+87);ctx.lineTo(CX-18,CY+87);ctx.lineTo(CX,CY+130);ctx.lineTo(CX-75,CY+108);ctx.closePath();ctx.fill();
+  const rc=ctx.createLinearGradient(CX+18,0,CX+70,0);rc.addColorStop(0,'#c8c7ee');rc.addColorStop(1,'#b8b7de');
+  ctx.fillStyle=rc;ctx.beginPath();ctx.moveTo(CX+65,CY+87);ctx.lineTo(CX+18,CY+87);ctx.lineTo(CX,CY+130);ctx.lineTo(CX+75,CY+108);ctx.closePath();ctx.fill();
   ctx.restore();
 }
-
-function drawNeck() {
-  ctx.save();
-  const g = ctx.createLinearGradient(CX - 22, 0, CX + 22, 0);
-  g.addColorStop(0, '#f0c4a0'); g.addColorStop(0.4, '#ffd5b5'); g.addColorStop(1, '#e8b890');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(CX - 20, CY + 62); ctx.lineTo(CX + 20, CY + 62);
-  ctx.lineTo(CX + 22, CY + 92); ctx.lineTo(CX - 22, CY + 92); ctx.closePath(); ctx.fill();
+function drawNeck(){
+  ctx.save();const g=ctx.createLinearGradient(CX-22,0,CX+22,0);g.addColorStop(0,'#f0c4a0');g.addColorStop(0.4,'#ffd5b5');g.addColorStop(1,'#e8b890');
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(CX-20,CY+62);ctx.lineTo(CX+20,CY+62);ctx.lineTo(CX+22,CY+92);ctx.lineTo(CX-22,CY+92);ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawFace(){
+  ctx.save();const g=ctx.createRadialGradient(CX-25,CY-25,5,CX,CY,105);g.addColorStop(0,'#ffe0c2');g.addColorStop(0.5,'#ffd0b0');g.addColorStop(1,'#f0b898');
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(CX,CY,93,108,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#f5c5a2';ctx.beginPath();ctx.moveTo(CX-70,CY+18);ctx.quadraticCurveTo(CX-82,CY+65,CX,CY+108);ctx.quadraticCurveTo(CX+82,CY+65,CX+70,CY+18);ctx.quadraticCurveTo(CX,CY+35,CX-70,CY+18);ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawEars(){
+  ctx.save();[[-90,-0.15],[90,0.15]].forEach(([ex,t])=>{
+    ctx.fillStyle='#f0c0a0';ctx.beginPath();ctx.ellipse(CX+ex,CY-5,13,17,t,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e0a880';ctx.beginPath();ctx.ellipse(CX+ex,CY-3,7,11,t,0,Math.PI*2);ctx.fill();
+  });ctx.restore();
+}
+function drawHairBack(){
+  ctx.save();const g=ctx.createLinearGradient(CX,CY-120,CX,H);g.addColorStop(0,'#7048c0');g.addColorStop(0.4,'#5a35a8');g.addColorStop(1,'#2d1a60');
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(CX,CY-28,103,113,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.moveTo(CX-82,CY-18);ctx.bezierCurveTo(CX-130,CY+60,CX-120,CY+160,CX-95,H-20);ctx.lineTo(CX-60,H-20);ctx.bezierCurveTo(CX-90,CY+160,CX-100,CY+60,CX-52,CY-8);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(CX+82,CY-18);ctx.bezierCurveTo(CX+130,CY+60,CX+120,CY+160,CX+95,H-20);ctx.lineTo(CX+60,H-20);ctx.bezierCurveTo(CX+90,CY+160,CX+100,CY+60,CX+52,CY-8);ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawHairFront(){
+  ctx.save();const g=ctx.createLinearGradient(CX,CY-130,CX,CY-10);g.addColorStop(0,'#8855d0');g.addColorStop(1,'#6040b8');
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(CX-100,CY-48);ctx.bezierCurveTo(CX-95,CY-132,CX-10,CY-142,CX,CY-142);ctx.bezierCurveTo(CX+10,CY-142,CX+95,CY-132,CX+100,CY-48);ctx.bezierCurveTo(CX+75,CY-38,CX+45,CY-16,CX+25,CY-42);ctx.bezierCurveTo(CX+18,CY-30,CX+8,CY-26,CX,CY-38);ctx.bezierCurveTo(CX-8,CY-26,CX-18,CY-30,CX-25,CY-42);ctx.bezierCurveTo(CX-45,CY-16,CX-75,CY-38,CX-100,CY-48);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(180,140,255,0.38)';ctx.beginPath();ctx.ellipse(CX-18,CY-100,12,28,-0.25,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(CX+32,CY-95,8,18,0.3,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#7a4cbe';
+  ctx.beginPath();ctx.moveTo(CX-88,CY-28);ctx.bezierCurveTo(CX-115,CY+5,CX-108,CY+45,CX-90,CY+52);ctx.bezierCurveTo(CX-75,CY+58,CX-68,CY+30,CX-72,CY-20);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(CX+88,CY-28);ctx.bezierCurveTo(CX+115,CY+5,CX+108,CY+45,CX+90,CY+52);ctx.bezierCurveTo(CX+75,CY+58,CX+68,CY+30,CX+72,CY-20);ctx.closePath();ctx.fill();
   ctx.restore();
 }
-
-function drawFace() {
-  ctx.save();
-  const g = ctx.createRadialGradient(CX - 25, CY - 25, 5, CX, CY, 105);
-  g.addColorStop(0, '#ffe0c2'); g.addColorStop(0.5, '#ffd0b0'); g.addColorStop(1, '#f0b898');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(CX, CY, 93, 108, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#f5c5a2';
-  ctx.beginPath();
-  ctx.moveTo(CX - 70, CY + 18);
-  ctx.quadraticCurveTo(CX - 82, CY + 65, CX, CY + 108);
-  ctx.quadraticCurveTo(CX + 82, CY + 65, CX + 70, CY + 18);
-  ctx.quadraticCurveTo(CX, CY + 35, CX - 70, CY + 18); ctx.closePath(); ctx.fill();
-  ctx.restore();
+function drawAccessory(){
+  ctx.save();ctx.fillStyle='#fbbf24';ctx.shadowColor='#f59e0b';ctx.shadowBlur=8;ctx.translate(CX+58,CY-78);
+  ctx.beginPath();for(let i=0;i<10;i++){const r=i%2===0?11:5,a=(i*Math.PI)/5-Math.PI/2;i===0?ctx.moveTo(r*Math.cos(a),r*Math.sin(a)):ctx.lineTo(r*Math.cos(a),r*Math.sin(a));}ctx.closePath();ctx.fill();ctx.restore();
 }
-
-function drawEars() {
-  ctx.save();
-  [[-90, -0.15], [90, 0.15]].forEach(([ex, t]) => {
-    ctx.fillStyle = '#f0c0a0';
-    ctx.beginPath(); ctx.ellipse(CX + ex, CY - 5, 13, 17, t, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#e0a880';
-    ctx.beginPath(); ctx.ellipse(CX + ex, CY - 3, 7, 11, t, 0, Math.PI * 2); ctx.fill();
-  });
-  ctx.restore();
+function drawEyebrows(){
+  ctx.save();const browY=CY-48;ctx.strokeStyle='#4a2888';ctx.lineWidth=3.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(CX-50,browY+4);ctx.quadraticCurveTo(CX-32,browY-4,CX-14,browY+1);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(CX+14,browY+1);ctx.quadraticCurveTo(CX+32,browY-4,CX+50,browY+4);ctx.stroke();ctx.restore();
 }
-
-function drawHairBack() {
-  ctx.save();
-  const g = ctx.createLinearGradient(CX, CY - 120, CX, H);
-  g.addColorStop(0, '#7048c0'); g.addColorStop(0.4, '#5a35a8'); g.addColorStop(1, '#2d1a60');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.ellipse(CX, CY - 28, 103, 113, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(CX - 82, CY - 18);
-  ctx.bezierCurveTo(CX - 130, CY + 60, CX - 120, CY + 160, CX - 95, H - 20);
-  ctx.lineTo(CX - 60, H - 20);
-  ctx.bezierCurveTo(CX - 90, CY + 160, CX - 100, CY + 60, CX - 52, CY - 8);
-  ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(CX + 82, CY - 18);
-  ctx.bezierCurveTo(CX + 130, CY + 60, CX + 120, CY + 160, CX + 95, H - 20);
-  ctx.lineTo(CX + 60, H - 20);
-  ctx.bezierCurveTo(CX + 90, CY + 160, CX + 100, CY + 60, CX + 52, CY - 8);
-  ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-
-function drawHairFront() {
-  ctx.save();
-  const g = ctx.createLinearGradient(CX, CY - 130, CX, CY - 10);
-  g.addColorStop(0, '#8855d0'); g.addColorStop(1, '#6040b8');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(CX - 100, CY - 48);
-  ctx.bezierCurveTo(CX - 95, CY - 132, CX - 10, CY - 142, CX, CY - 142);
-  ctx.bezierCurveTo(CX + 10, CY - 142, CX + 95, CY - 132, CX + 100, CY - 48);
-  ctx.bezierCurveTo(CX + 75, CY - 38, CX + 45, CY - 16, CX + 25, CY - 42);
-  ctx.bezierCurveTo(CX + 18, CY - 30, CX + 8, CY - 26, CX, CY - 38);
-  ctx.bezierCurveTo(CX - 8, CY - 26, CX - 18, CY - 30, CX - 25, CY - 42);
-  ctx.bezierCurveTo(CX - 45, CY - 16, CX - 75, CY - 38, CX - 100, CY - 48);
-  ctx.closePath(); ctx.fill();
-  ctx.fillStyle = 'rgba(180,140,255,0.38)';
-  ctx.beginPath(); ctx.ellipse(CX - 18, CY - 100, 12, 28, -0.25, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(CX + 32, CY - 95, 8, 18, 0.3, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#7a4cbe';
-  ctx.beginPath();
-  ctx.moveTo(CX - 88, CY - 28);
-  ctx.bezierCurveTo(CX - 115, CY + 5, CX - 108, CY + 45, CX - 90, CY + 52);
-  ctx.bezierCurveTo(CX - 75, CY + 58, CX - 68, CY + 30, CX - 72, CY - 20);
-  ctx.closePath(); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(CX + 88, CY - 28);
-  ctx.bezierCurveTo(CX + 115, CY + 5, CX + 108, CY + 45, CX + 90, CY + 52);
-  ctx.bezierCurveTo(CX + 75, CY + 58, CX + 68, CY + 30, CX + 72, CY - 20);
-  ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-
-function drawAccessory() {
-  ctx.save();
-  ctx.fillStyle = '#fbbf24'; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 8;
-  ctx.translate(CX + 58, CY - 78);
-  ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const r = i % 2 === 0 ? 11 : 5, a = (i * Math.PI) / 5 - Math.PI / 2;
-    i === 0 ? ctx.moveTo(r * Math.cos(a), r * Math.sin(a)) : ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
-  }
-  ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-
-function drawEyebrows() {
-  ctx.save();
-  const browY = CY - 48;
-  ctx.strokeStyle = '#4a2888'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(CX - 50, browY + 4); ctx.quadraticCurveTo(CX - 32, browY - 4, CX - 14, browY + 1); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(CX + 14, browY + 1); ctx.quadraticCurveTo(CX + 32, browY - 4, CX + 50, browY + 4); ctx.stroke();
-  ctx.restore();
-}
-
-function drawEyes() {
-  ctx.save();
-  const blink = st.blink, eyeY = CY - 16, gx = st.glanceX;
-  [-1, 1].forEach(side => {
-    const ex = CX + side * 30;
-    const sy = 1 - blink;
-    ctx.save(); ctx.translate(ex, eyeY); ctx.scale(1, sy);
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.ellipse(0, 0, 20, 22, 0, 0, Math.PI * 2); ctx.fill();
-    const sh = ctx.createLinearGradient(0, -22, 0, 5);
-    sh.addColorStop(0, 'rgba(150,100,220,0.38)'); sh.addColorStop(1, 'transparent');
-    ctx.fillStyle = sh; ctx.beginPath(); ctx.ellipse(0, -4, 20, 18, 0, 0, Math.PI * 2); ctx.fill();
-    const ig = ctx.createRadialGradient(gx * 4 - 3, -5, 1, gx * 4, 0, 14);
-    ig.addColorStop(0, '#8dd4f8'); ig.addColorStop(0.35, '#4a96e8');
-    ig.addColorStop(0.7, '#2a6ab8'); ig.addColorStop(1, '#153d80');
-    ctx.fillStyle = ig; ctx.beginPath(); ctx.ellipse(gx * 4, 0, 13, 16, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#08152a'; ctx.beginPath(); ctx.ellipse(gx * 4 + 1, 1, 6, 8, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.ellipse(gx * 4 - 4, -6, 4, 4, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.ellipse(gx * 4 + 5, 3, 2.5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+function drawEyes(){
+  ctx.save();const blink=st.blink,eyeY=CY-16,gx=st.glanceX;
+  [-1,1].forEach(side=>{
+    const ex=CX+side*30,sy=1-blink;
+    ctx.save();ctx.translate(ex,eyeY);ctx.scale(1,sy);
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,20,22,0,0,Math.PI*2);ctx.fill();
+    const sh=ctx.createLinearGradient(0,-22,0,5);sh.addColorStop(0,'rgba(150,100,220,0.38)');sh.addColorStop(1,'transparent');
+    ctx.fillStyle=sh;ctx.beginPath();ctx.ellipse(0,-4,20,18,0,0,Math.PI*2);ctx.fill();
+    const ig=ctx.createRadialGradient(gx*4-3,-5,1,gx*4,0,14);ig.addColorStop(0,'#8dd4f8');ig.addColorStop(0.35,'#4a96e8');ig.addColorStop(0.7,'#2a6ab8');ig.addColorStop(1,'#153d80');
+    ctx.fillStyle=ig;ctx.beginPath();ctx.ellipse(gx*4,0,13,16,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#08152a';ctx.beginPath();ctx.ellipse(gx*4+1,1,6,8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.95)';ctx.beginPath();ctx.ellipse(gx*4-4,-6,4,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.ellipse(gx*4+5,3,2.5,2.5,0,0,Math.PI*2);ctx.fill();
     ctx.restore();
-
-    if (blink < 0.6) {
-      ctx.save(); ctx.strokeStyle = '#1a0530'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-      const ly = eyeY - 22 * (1 - blink);
-      for (let i = -3; i <= 3; i++) {
-        ctx.beginPath(); ctx.moveTo(ex + i * 5.5, ly); ctx.lineTo(ex + i * 6.2, ly - 5 - Math.abs(i) * 0.5); ctx.stroke();
-      }
-      ctx.restore();
-    }
-    if (blink > 0.05) {
-      ctx.save();
-      ctx.beginPath(); ctx.rect(ex - 26, eyeY - 28, 52, 28 + 24 * blink); ctx.clip();
-      ctx.fillStyle = '#ffd0b0'; ctx.beginPath(); ctx.ellipse(ex, eyeY, 24, 26, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-  });
-  ctx.restore();
+    if(blink<0.6){ctx.save();ctx.strokeStyle='#1a0530';ctx.lineWidth=2;ctx.lineCap='round';const ly=eyeY-22*(1-blink);for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(ex+i*5.5,ly);ctx.lineTo(ex+i*6.2,ly-5-Math.abs(i)*0.5);ctx.stroke();}ctx.restore();}
+    if(blink>0.05){ctx.save();ctx.beginPath();ctx.rect(ex-26,eyeY-28,52,28+24*blink);ctx.clip();ctx.fillStyle='#ffd0b0';ctx.beginPath();ctx.ellipse(ex,eyeY,24,26,0,0,Math.PI*2);ctx.fill();ctx.restore();}
+  });ctx.restore();
 }
-
-function drawNose() {
-  ctx.save();
-  ctx.strokeStyle = '#cc8866'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(CX - 6, CY + 20); ctx.quadraticCurveTo(CX - 4, CY + 25, CX, CY + 24);
-  ctx.quadraticCurveTo(CX + 4, CY + 25, CX + 6, CY + 20); ctx.stroke();
-  ctx.restore();
+function drawNose(){
+  ctx.save();ctx.strokeStyle='#cc8866';ctx.lineWidth=1.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(CX-6,CY+20);ctx.quadraticCurveTo(CX-4,CY+25,CX,CY+24);ctx.quadraticCurveTo(CX+4,CY+25,CX+6,CY+20);ctx.stroke();ctx.restore();
 }
-
-/* ── MOUTH — 2-axis viseme system ── */
-function drawMouth() {
+function drawMouth(){
   ctx.save();
-  const open = st.open;   // 0–1  jaw drop
-  const wide = st.wide;   // 0–1  lip stretch (0=pursed O/U, 1=wide A/E/I)
-  const my = CY + 52;
-
-  // Lip corner positions depend on wide
-  const cornerX = 22 + wide * 8;   // wider for A/E/I, narrower for O/U
-  const lipRaise = open * (3 + wide * 3); // upper lip rises more for wide vowels
-
-  // Upper lip Y (rises when open)
-  const ulY = my - lipRaise;
-  // Lower lip Y (drops)
-  const llY = my + open * 18;
-
-  // ── Interior cavity ──
-  if (open > 0.03) {
-    const cavW = cornerX - 2 + open * 2;
-    const cavH = Math.max((llY - ulY) * 0.55, 1);
-
-    ctx.fillStyle = '#160410';
-    ctx.beginPath();
-    ctx.ellipse(CX, ulY + (llY - ulY) * 0.45, cavW, cavH, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Upper teeth — more visible for wide vowels
-    if (open > 0.08) {
-      const tw = cavW - 1;
-      const th = Math.min(open * 10 + wide * 6, 12);
-      ctx.fillStyle = '#fffaf8';
-      ctx.beginPath();
-      ctx.ellipse(CX, ulY + 1, tw, th, 0, Math.PI, 2 * Math.PI);
-      ctx.fill();
-      // Tooth dividers for wide
-      if (th > 5 && wide > 0.4) {
-        ctx.strokeStyle = 'rgba(190,175,180,0.4)';
-        ctx.lineWidth = 0.7;
-        [-tw * 0.38, 0, tw * 0.38].forEach(ox => {
-          ctx.beginPath(); ctx.moveTo(CX + ox, ulY + 1); ctx.lineTo(CX + ox, ulY + 1 - th * 0.8); ctx.stroke();
-        });
-      }
+  const open=st.open,wide=st.wide,my=CY+52;
+  const cornerX=22+wide*8,lipRaise=open*(3+wide*3);
+  const ulY=my-lipRaise,llY=my+open*18;
+  if(open>0.03){
+    const cavW=cornerX-2+open*2,cavH=Math.max((llY-ulY)*0.55,1);
+    ctx.fillStyle='#160410';ctx.beginPath();ctx.ellipse(CX,ulY+(llY-ulY)*0.45,cavW,cavH,0,0,Math.PI*2);ctx.fill();
+    if(open>0.08){
+      const tw=cavW-1,th=Math.min(open*10+wide*6,12);
+      ctx.fillStyle='#fffaf8';ctx.beginPath();ctx.ellipse(CX,ulY+1,tw,th,0,Math.PI,2*Math.PI);ctx.fill();
+      if(th>5&&wide>0.4){ctx.strokeStyle='rgba(190,175,180,0.4)';ctx.lineWidth=0.7;[-tw*0.38,0,tw*0.38].forEach(ox=>{ctx.beginPath();ctx.moveTo(CX+ox,ulY+1);ctx.lineTo(CX+ox,ulY+1-th*0.8);ctx.stroke();});}
     }
-
-    // Lower teeth — only when open + somewhat wide
-    if (open > 0.32 && wide > 0.25) {
-      const lh = Math.min((open - 0.32) * 14, 9);
-      ctx.fillStyle = '#f5eff2';
-      ctx.beginPath();
-      ctx.ellipse(CX, llY * 0.55 + ulY * 0.45 + cavH * 0.6, cavW - 5, lh, 0, 0, Math.PI);
-      ctx.fill();
-    }
-
-    // Tongue — deep open
-    if (open > 0.55) {
-      const ta = Math.min((open - 0.55) / 0.45, 1);
-      ctx.fillStyle = `rgba(218, 82, 95, ${ta * 0.88})`;
-      ctx.beginPath();
-      ctx.ellipse(CX, ulY + (llY - ulY) * 0.75,
-        (cavW - 5) * ta * (0.7 + wide * 0.3),
-        cavH * 0.42 * ta, 0, 0, Math.PI);
-      ctx.fill();
-    }
+    if(open>0.32&&wide>0.25){const lh=Math.min((open-0.32)*14,9);ctx.fillStyle='#f5eff2';ctx.beginPath();ctx.ellipse(CX,llY*0.55+ulY*0.45+cavH*0.6,cavW-5,lh,0,0,Math.PI);ctx.fill();}
+    if(open>0.55){const ta=Math.min((open-0.55)/0.45,1);ctx.fillStyle=`rgba(218,82,95,${ta*0.88})`;ctx.beginPath();ctx.ellipse(CX,ulY+(llY-ulY)*0.75,(cavW-5)*ta*(0.7+wide*0.3),cavH*0.42*ta,0,0,Math.PI);ctx.fill();}
   }
-
-  // ── Upper lip ──
-  ctx.fillStyle = '#bf4060';
-  ctx.beginPath();
-  ctx.moveTo(CX - cornerX, ulY + 2);
-  // Left → left peak
-  ctx.bezierCurveTo(CX - cornerX * 0.65, ulY - 5, CX - cornerX * 0.28, ulY - 4, CX - 4, ulY - 7 - open * 2);
-  // Cupid's bow dip
-  ctx.bezierCurveTo(CX - 1.5, ulY - 4, CX + 1.5, ulY - 4, CX + 4, ulY - 7 - open * 2);
-  // Right peak → right corner
-  ctx.bezierCurveTo(CX + cornerX * 0.28, ulY - 4, CX + cornerX * 0.65, ulY - 5, CX + cornerX, ulY + 2);
-  // Lower edge back
-  ctx.bezierCurveTo(CX + cornerX * 0.5, ulY + 1, CX, ulY + 1.5, CX - cornerX * 0.5, ulY + 1);
-  ctx.closePath(); ctx.fill();
-
-  // ── Lower lip ──
-  ctx.fillStyle = '#cf6080';
-  ctx.beginPath();
-  ctx.moveTo(CX - cornerX, ulY + 2);
-  // Drop down
-  ctx.bezierCurveTo(
-    CX - cornerX * 0.5, ulY + 8 + open * 14,
-    CX + cornerX * 0.5, ulY + 8 + open * 14,
-    CX + cornerX, ulY + 2
-  );
-  // Bottom curve
-  ctx.bezierCurveTo(CX + cornerX * 0.6, llY + 9, CX, llY + 12, CX - cornerX * 0.6, llY + 9);
-  ctx.closePath(); ctx.fill();
-
-  // Lower lip highlight
-  ctx.fillStyle = 'rgba(255, 195, 210, 0.42)';
-  ctx.beginPath(); ctx.ellipse(CX + 3, llY + 7, 9 + wide * 4, 3.5, 0, 0, Math.PI * 2); ctx.fill();
-
-  // Corner dots
-  ctx.fillStyle = '#aa3555';
-  [-cornerX, cornerX].forEach(ox => {
-    ctx.beginPath(); ctx.arc(CX + ox, ulY + 2, 2.2, 0, Math.PI * 2); ctx.fill();
-  });
-
+  ctx.fillStyle='#bf4060';ctx.beginPath();ctx.moveTo(CX-cornerX,ulY+2);ctx.bezierCurveTo(CX-cornerX*0.65,ulY-5,CX-cornerX*0.28,ulY-4,CX-4,ulY-7-open*2);ctx.bezierCurveTo(CX-1.5,ulY-4,CX+1.5,ulY-4,CX+4,ulY-7-open*2);ctx.bezierCurveTo(CX+cornerX*0.28,ulY-4,CX+cornerX*0.65,ulY-5,CX+cornerX,ulY+2);ctx.bezierCurveTo(CX+cornerX*0.5,ulY+1,CX,ulY+1.5,CX-cornerX*0.5,ulY+1);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#cf6080';ctx.beginPath();ctx.moveTo(CX-cornerX,ulY+2);ctx.bezierCurveTo(CX-cornerX*0.5,ulY+8+open*14,CX+cornerX*0.5,ulY+8+open*14,CX+cornerX,ulY+2);ctx.bezierCurveTo(CX+cornerX*0.6,llY+9,CX,llY+12,CX-cornerX*0.6,llY+9);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(255,195,210,0.42)';ctx.beginPath();ctx.ellipse(CX+3,llY+7,9+wide*4,3.5,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#aa3555';[-cornerX,cornerX].forEach(ox=>{ctx.beginPath();ctx.arc(CX+ox,ulY+2,2.2,0,Math.PI*2);ctx.fill();});
+  ctx.restore();
+}
+function drawCheeks(){
+  ctx.save();const a=st.cheekAlpha;
+  [-55,55].forEach(ox=>{const g=ctx.createRadialGradient(CX+ox,CY+22,0,CX+ox,CY+22,28);g.addColorStop(0,`rgba(255,140,165,${a})`);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(CX+ox,CY+22,28,17,0,0,Math.PI*2);ctx.fill();});
   ctx.restore();
 }
 
-function drawCheeks() {
-  ctx.save();
-  const a = st.cheekAlpha;
-  [-55, 55].forEach(ox => {
-    const g = ctx.createRadialGradient(CX + ox, CY + 22, 0, CX + ox, CY + 22, 28);
-    g.addColorStop(0, `rgba(255,140,165,${a})`); g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(CX + ox, CY + 22, 28, 17, 0, 0, Math.PI * 2); ctx.fill();
-  });
-  ctx.restore();
+/* ── Animation loop ── */
+let lastTs=0;
+function loop(ts){
+  const dt=Math.min(ts-lastTs,50);lastTs=ts;
+  st.breathTimer+=dt*0.0008;st.bobTimer+=dt*0.0017*(st.speaking?1.8:0.6);
+  st.blinkTimer-=dt;
+  if(st.blinkTimer<=0&&!st.blinking){st.blinkTimer=1800+Math.random()*3500;doBlink();}
+  st.glanceTimer-=dt;
+  if(st.glanceTimer<=0){st.glanceTimer=2200+Math.random()*4000;st.glanceX=(Math.random()-0.5)*1.8;}
+  const atk=dt*0.018,rel=dt*0.009;
+  st.open=lerp(st.open,st.openTarget,st.openTarget>st.open?atk:rel);
+  st.wide=lerp(st.wide,st.wideTarget,st.wideTarget>st.wide?atk:rel*1.2);
+  st.cheekAlpha=lerp(st.cheekAlpha,(st.speaking||liveCapturing)?0.52:0.28,dt*0.004);
+  render();requestAnimationFrame(loop);
 }
-
-// ════════════════════════════════════════
-//  ANIMATION LOOP
-// ════════════════════════════════════════
-let lastTs = 0;
-
-function loop(ts) {
-  const dt = Math.min(ts - lastTs, 50); lastTs = ts;
-  st.breathTimer += dt * 0.0008;
-  st.bobTimer    += dt * 0.0017 * (st.speaking ? 1.8 : 0.6);
-  st.blinkTimer  -= dt;
-  if (st.blinkTimer <= 0 && !st.blinking) { st.blinkTimer = 1800 + Math.random() * 3500; doBlink(); }
-  st.glanceTimer -= dt;
-  if (st.glanceTimer <= 0) { st.glanceTimer = 2200 + Math.random() * 4000; st.glanceX = (Math.random() - 0.5) * 1.8; }
-
-  // Mouth smoothing: fast attack, slow release (more natural)
-  const attackRate  = dt * 0.018;
-  const releaseRate = dt * 0.009;
-  const openRate  = st.openTarget  > st.open  ? attackRate : releaseRate;
-  const wideRate  = st.wideTarget  > st.wide  ? attackRate : releaseRate * 1.2;
-  st.open = lerp(st.open, st.openTarget, openRate);
-  st.wide = lerp(st.wide, st.wideTarget, wideRate);
-
-  st.cheekAlpha = lerp(st.cheekAlpha, st.speaking || liveCapturing ? 0.52 : 0.28, dt * 0.004);
-
-  render();
-  requestAnimationFrame(loop);
-}
-
-function doBlink() {
-  st.blinking = true;
-  const dur = 130, start = performance.now();
-  function step(t) {
-    const p = (t - start) / dur;
-    st.blink = p < 0.5 ? easeOut(p * 2) : easeOut((1 - p) * 2);
-    if (p < 1) requestAnimationFrame(step);
-    else { st.blink = 0; st.blinking = false; }
-  }
+function doBlink(){
+  st.blinking=true;const dur=130,start=performance.now();
+  function step(t){const p=(t-start)/dur;st.blink=p<0.5?easeOut(p*2):easeOut((1-p)*2);if(p<1)requestAnimationFrame(step);else{st.blink=0;st.blinking=false;}}
   requestAnimationFrame(step);
 }
 requestAnimationFrame(loop);
 
-// ════════════════════════════════════════
-//  VISEME MAPPING
-// ════════════════════════════════════════
-// Returns {open, wide} for a character
-function charToViseme(ch) {
-  const code = ch.charCodeAt(0);
-
-  // Korean syllable block
-  if (code >= 0xAC00 && code <= 0xD7A3) {
-    const j = Math.floor((code - 0xAC00) / 28) % 21;
-    //    ㅏ       ㅐ       ㅑ       ㅒ       ㅓ       ㅔ       ㅕ       ㅖ
-    //    ㅗ       ㅘ       ㅙ       ㅚ       ㅛ       ㅜ       ㅝ       ㅞ
-    //    ㅟ       ㅠ       ㅡ       ㅢ       ㅣ
-    const map = [
-      {open:0.80,wide:0.85}, {open:0.50,wide:0.90}, {open:0.75,wide:0.82}, {open:0.45,wide:0.88},
-      {open:0.55,wide:0.50}, {open:0.48,wide:0.82}, {open:0.50,wide:0.52}, {open:0.44,wide:0.80},
-      {open:0.52,wide:0.20}, {open:0.68,wide:0.62}, {open:0.48,wide:0.70}, {open:0.44,wide:0.60},
-      {open:0.48,wide:0.22}, {open:0.38,wide:0.12}, {open:0.44,wide:0.42}, {open:0.40,wide:0.60},
-      {open:0.34,wide:0.30}, {open:0.36,wide:0.14}, {open:0.20,wide:0.60}, {open:0.28,wide:0.70},
-      {open:0.32,wide:0.92},
-    ];
-    return map[j] || {open:0.14, wide:0.55};
+/* ── Viseme mapping ── */
+function charToViseme(ch){
+  const code=ch.charCodeAt(0);
+  if(code>=0xAC00&&code<=0xD7A3){
+    const j=Math.floor((code-0xAC00)/28)%21;
+    const map=[{open:0.80,wide:0.85},{open:0.50,wide:0.90},{open:0.75,wide:0.82},{open:0.45,wide:0.88},{open:0.55,wide:0.50},{open:0.48,wide:0.82},{open:0.50,wide:0.52},{open:0.44,wide:0.80},{open:0.52,wide:0.20},{open:0.68,wide:0.62},{open:0.48,wide:0.70},{open:0.44,wide:0.60},{open:0.48,wide:0.22},{open:0.38,wide:0.12},{open:0.44,wide:0.42},{open:0.40,wide:0.60},{open:0.34,wide:0.30},{open:0.36,wide:0.14},{open:0.20,wide:0.60},{open:0.28,wide:0.70},{open:0.32,wide:0.92}];
+    return map[j]||{open:0.14,wide:0.55};
   }
-
-  // Latin vowels
-  switch (ch.toLowerCase()) {
-    case 'a': return {open:0.78, wide:0.85};
-    case 'e': return {open:0.48, wide:0.88};
-    case 'i': return {open:0.28, wide:0.95};
-    case 'o': return {open:0.52, wide:0.18};
-    case 'u': return {open:0.36, wide:0.10};
-  }
-
-  // Consonant / space
-  if (/\s/.test(ch)) return null;
-  return {open:0.12, wide:0.52};
+  switch(ch.toLowerCase()){case 'a':return{open:0.78,wide:0.85};case 'e':return{open:0.48,wide:0.88};case 'i':return{open:0.28,wide:0.95};case 'o':return{open:0.52,wide:0.18};case 'u':return{open:0.36,wide:0.10};}
+  if(/\s/.test(ch))return null;
+  return{open:0.12,wide:0.52};
 }
 
-// ════════════════════════════════════════
-//  TTS
-// ════════════════════════════════════════
-const synth = window.speechSynthesis;
-let utt = null, visemeTimer = null;
+// ═══════════════════════════════════════════════
+//  HEYGEN STREAMING AVATAR
+// ═══════════════════════════════════════════════
+let hgSession = null; // { session_id, pc }
+let hgConnected = false;
+const HEYGEN_API = 'https://api.heygen.com';
 
-function loadVoices() {
-  const sel = document.getElementById('voice-select');
-  const voices = synth.getVoices();
-  if (!voices.length) { setTimeout(loadVoices, 300); return; }
-  sel.innerHTML = '';
-  voices.forEach((v, i) => {
-    const opt = document.createElement('option');
-    opt.value = i; opt.textContent = `${v.name} (${v.lang})`; sel.appendChild(opt);
+function getApiKey(){ return document.getElementById('api-key').value.trim() || localStorage.getItem('hg_api_key') || ''; }
+function saveApiKey(k){ if(k) localStorage.setItem('hg_api_key', k); }
+
+async function hgFetch(path, opts={}){
+  const key = getApiKey();
+  return fetch(HEYGEN_API + path, {
+    ...opts,
+    headers: { 'X-Api-Key': key, 'Content-Type': 'application/json', ...(opts.headers||{}) }
   });
-  const ko = voices.findIndex(v => v.lang.startsWith('ko'));
-  if (ko >= 0) sel.value = ko;
-  else { const en = voices.findIndex(v => v.lang.startsWith('en')); if (en >= 0) sel.value = en; }
-}
-synth.onvoiceschanged = loadVoices; loadVoices();
-
-function setTTSStatus(text, mode) {
-  document.getElementById('tts-status').textContent = text;
-  document.getElementById('tts-dot').className = 'dot ' + (mode || '');
-  document.getElementById('speak-btn').className = 'btn-primary' + (mode === 'speaking' ? ' speaking' : '');
 }
 
-function speak() {
-  if (synth.speaking) synth.cancel();
-  clearVisemeSchedule();
-  const text = document.getElementById('text-input').value.trim();
-  if (!text) return;
-
-  utt = new SpeechSynthesisUtterance(text);
-  const voices = synth.getVoices();
-  const vi = parseInt(document.getElementById('voice-select').value);
-  if (!isNaN(vi) && voices[vi]) utt.voice = voices[vi];
-  utt.rate  = parseFloat(document.getElementById('speed-select').value);
-  utt.pitch = parseFloat(document.getElementById('pitch-select').value);
-
-  utt.onstart = () => {
-    st.speaking = true;
-    setTTSStatus('말하는 중...', 'speaking');
-    scheduleVisemes(text, utt.rate);
-  };
-  utt.onend = () => {
-    st.speaking = false;
-    st.openTarget = 0; st.wideTarget = 0.5;
-    clearVisemeSchedule();
-    setTTSStatus('완료 ✓', '');
-    setTimeout(() => setTTSStatus('준비됨 — Ctrl+Enter로 말하기', ''), 2000);
-  };
-  utt.onerror = () => { st.speaking = false; clearVisemeSchedule(); setTTSStatus('오류 발생', 'error'); };
-  synth.speak(utt);
-}
-
-function scheduleVisemes(text, rate) {
-  // Estimate ~5.5 chars/sec at rate=1.0
-  const msPerChar = 1000 / (rate * 5.5);
-  const frames = [];
-  let t = 60; // small start delay
-  for (const ch of text) {
-    const v = charToViseme(ch);
-    if (v) frames.push({ at: t, ...v });
-    t += /\s/.test(ch) ? msPerChar * 0.4 : msPerChar;
-  }
-
-  const startTime = Date.now();
-  let idx = 0;
-  visemeTimer = setInterval(() => {
-    if (!st.speaking || idx >= frames.length) { clearVisemeSchedule(); return; }
-    const now = Date.now() - startTime;
-    while (idx < frames.length && frames[idx].at <= now) {
-      st.openTarget = frames[idx].open;
-      st.wideTarget = frames[idx].wide;
-      idx++;
-    }
-  }, 16);
-}
-
-function clearVisemeSchedule() {
-  if (visemeTimer) { clearInterval(visemeTimer); visemeTimer = null; }
-}
-
-function stopTTS() {
-  synth.cancel(); st.speaking = false;
-  st.openTarget = 0; st.wideTarget = 0.5;
-  clearVisemeSchedule();
-  setTTSStatus('멈춤', '');
-}
-
-document.getElementById('text-input').addEventListener('keydown', e => {
-  if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); speak(); }
-});
-
-// ════════════════════════════════════════
-//  LIVE AUDIO CAPTURE
-// ════════════════════════════════════════
-let liveCapturing  = false;
-let currentMethod  = 'mic';
-let audioCtx2 = null, analyser2 = null, freqData2 = null;
-let captureStream  = null, liveRafId = null;
-let envOpen = 0, envWide = 0.5; // smoothed envelope
-
-const freqCanvas = document.getElementById('freq-canvas');
-const freqCtx    = freqCanvas.getContext('2d');
-const levelBar   = document.getElementById('level-bar');
-const levelBarWrap = document.getElementById('level-bar-wrap');
-
-document.getElementById('sensitivity').addEventListener('input', function () {
-  document.getElementById('sens-val').textContent = this.value;
-});
-
-function switchMethod(m) {
-  if (liveCapturing) stopCapture();
-  currentMethod = m;
-  document.getElementById('mtab-mic').classList.toggle('active', m === 'mic');
-  document.getElementById('mtab-screen').classList.toggle('active', m === 'screen');
-  document.getElementById('method-mic').style.display    = m === 'mic'    ? '' : 'none';
-  document.getElementById('method-screen').style.display = m === 'screen' ? '' : 'none';
-  document.getElementById('live-btn').textContent = m === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
-  document.getElementById('live-btn').className = 'btn-live';
-  setLiveStatus('대기 중', '');
-}
-
-async function refreshMics() {
+async function loadAvatars(){
+  const key = document.getElementById('api-key').value.trim();
+  if(!key){ setHGStatus('API Key를 먼저 입력하세요','error'); return; }
+  saveApiKey(key);
+  setHGStatus('아바타 목록 로딩 중...','');
   try {
-    await navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(s => s.getTracks().forEach(t => t.stop())).catch(() => {});
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const sel = document.getElementById('mic-select');
-    sel.innerHTML = '';
-    devices.filter(d => d.kind === 'audioinput').forEach(d => {
+    const r = await fetch(HEYGEN_API+'/v2/avatars',{headers:{'X-Api-Key':key}});
+    const d = await r.json();
+    if(d.error) throw new Error(d.error);
+    const avatars = d.data.avatars;
+    const sel = document.getElementById('avatar-select');
+    sel.innerHTML = '<option value="">— 아바타 선택 —</option>';
+    avatars.forEach(a => {
       const opt = document.createElement('option');
-      opt.value = d.deviceId;
-      opt.textContent = d.label || '마이크 ' + d.deviceId.slice(0, 6);
+      opt.value = a.avatar_id;
+      opt.textContent = a.avatar_name;
+      opt.dataset.img = a.preview_image_url || '';
       sel.appendChild(opt);
     });
-  } catch (e) { console.warn(e); }
-}
-refreshMics();
-
-function setLiveStatus(text, mode) {
-  document.getElementById('live-status').textContent = text;
-  document.getElementById('live-dot').className = 'dot ' + (mode || '');
+    // Auto-select first
+    if(avatars.length > 0){ sel.value = avatars[0].avatar_id; updateAvatarPreview(); }
+    await loadVoicesHG(key);
+    setHGStatus(`아바타 ${avatars.length}개 로드 완료. 연결 시작을 누르세요`,'');
+  } catch(e){ setHGStatus('로드 실패: '+e.message,'error'); }
 }
 
-async function toggleCapture() {
-  if (liveCapturing) { stopCapture(); return; }
-  if (currentMethod === 'mic') await startMicCapture();
-  else await startScreenCapture();
-}
-
-async function startMicCapture() {
-  setLiveStatus('마이크 권한 요청 중...', '');
+async function loadVoicesHG(key){
   try {
-    const deviceId = document.getElementById('mic-select').value;
-    captureStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        deviceId: deviceId ? { exact: deviceId } : undefined,
-        echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+    const r = await fetch(HEYGEN_API+'/v2/voices',{headers:{'X-Api-Key':key}});
+    const d = await r.json();
+    const voices = d.data.voices.filter(v=>v.support_interactive_avatar);
+    const sel = document.getElementById('hg-voice-select');
+    sel.innerHTML = '';
+    voices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.voice_id;
+      opt.textContent = `${v.name} (${v.language})`;
+      if(v.language==='Korean') opt.style.fontWeight='bold';
+      sel.appendChild(opt);
+    });
+    // Default: Korean SunHi
+    const ko = voices.find(v=>v.language==='Korean');
+    if(ko) sel.value = ko.voice_id;
+  } catch(e){}
+}
+
+function updateAvatarPreview(){
+  const sel = document.getElementById('avatar-select');
+  const opt = sel.options[sel.selectedIndex];
+  if(!opt || !opt.dataset.img) return;
+  const wrap = document.getElementById('avatar-preview-wrap');
+  document.getElementById('avatar-thumb').src = opt.dataset.img;
+  document.getElementById('avatar-preview-name').textContent = opt.textContent;
+  wrap.style.display = 'flex';
+}
+document.getElementById('avatar-select').addEventListener('change', updateAvatarPreview);
+
+async function connectHeyGen(){
+  const avatarId = document.getElementById('avatar-select').value;
+  const voiceId  = document.getElementById('hg-voice-select').value;
+  if(!avatarId){ setHGStatus('아바타를 선택하세요','error'); return; }
+  if(hgConnected) await disconnectHeyGen();
+
+  showLoading('HeyGen 세션 생성 중...');
+  setHGStatus('연결 중...','connecting');
+  setPill('connecting');
+
+  try {
+    // 1. Create session
+    const res = await hgFetch('/v1/streaming.new', {
+      method: 'POST',
+      body: JSON.stringify({
+        quality: 'high',
+        avatar_id: avatarId,
+        voice: { voice_id: voiceId, rate: 1.0 },
+        background: { type: 'color', value: '#131325' }
+      })
+    });
+    const data = await res.json();
+    if(data.code !== 100) throw new Error(data.message || JSON.stringify(data));
+    const { session_id, sdp, ice_servers } = data.data;
+
+    // 2. RTCPeerConnection
+    showLoading('WebRTC 연결 중...');
+    const pc = new RTCPeerConnection({ iceServers: ice_servers });
+
+    // Receive avatar video
+    const videoEl = document.getElementById('hg-video');
+    pc.ontrack = (e) => {
+      if(e.streams && e.streams[0]) videoEl.srcObject = e.streams[0];
+    };
+
+    // Needed: add transceiver so PC can receive
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+
+    // Set remote description (HeyGen's offer)
+    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+    // Create & set local answer
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // ICE trickle
+    pc.onicecandidate = async ({ candidate }) => {
+      if(candidate){
+        await hgFetch('/v1/streaming.ice', {
+          method: 'POST',
+          body: JSON.stringify({ session_id, candidate })
+        }).catch(()=>{});
       }
+    };
+
+    // 3. Send answer to HeyGen
+    await hgFetch('/v1/streaming.start', {
+      method: 'POST',
+      body: JSON.stringify({ session_id, sdp: answer })
     });
-    setupAnalyser(captureStream);
-    setCapturingUI('🎤 마이크 캡처 중 — AI 소리에 맞춰 입이 움직입니다', '🎤 캡처 중지');
-    captureStream.getAudioTracks()[0].onended = () => stopCapture();
-  } catch (e) {
-    setLiveStatus(e.name === 'NotAllowedError' ? '❌ 마이크 권한 거부' : '오류: ' + e.message, 'error');
+
+    hgSession = { session_id, pc };
+
+    // Wait for video to start playing
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('비디오 타임아웃')), 15000);
+      videoEl.onloadeddata = () => { clearTimeout(timeout); resolve(); };
+      videoEl.onerror = () => { clearTimeout(timeout); reject(new Error('비디오 오류')); };
+    });
+
+    // Switch UI to HeyGen video
+    hideLoading();
+    videoEl.classList.add('visible');
+    canvas.classList.add('hidden');
+    document.getElementById('conn-badge').classList.add('show');
+    document.getElementById('badge-text').textContent = document.getElementById('avatar-select').options[document.getElementById('avatar-select').selectedIndex].textContent;
+    document.getElementById('fallback-opts').style.display = 'none';
+
+    hgConnected = true;
+    setHGStatus('연결됨 ✓ — 텍스트 입력 후 말하기 버튼을 누르세요','');
+    setPill('connected');
+
+    // Handle disconnect
+    pc.onconnectionstatechange = () => {
+      if(['disconnected','failed','closed'].includes(pc.connectionState)){
+        onHGDisconnected();
+      }
+    };
+
+  } catch(e){
+    hideLoading();
+    setHGStatus('연결 실패: '+e.message,'error');
+    setPill('error');
+    hgConnected = false;
   }
 }
 
-async function startScreenCapture() {
-  setLiveStatus('화면 공유 창 대기 중...', '');
-  try {
-    captureStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { width: 1, height: 1, frameRate: 1 },
-      audio: { echoCancellation: false, noiseSuppression: false, sampleRate: 44100 }
-    });
-    if (captureStream.getAudioTracks().length === 0) {
-      setLiveStatus('⚠️ 오디오 없음 — "시스템 오디오 공유" 체크 후 재시도', 'error');
-      captureStream.getTracks().forEach(t => t.stop()); captureStream = null; return;
-    }
-    captureStream.getVideoTracks().forEach(t => t.stop());
-    setupAnalyser(captureStream);
-    setCapturingUI('🖥️ 화면 공유 캡처 중', '⏹ 캡처 중지');
-    captureStream.getAudioTracks()[0].onended = () => stopCapture();
-  } catch (e) {
-    setLiveStatus(e.name === 'NotAllowedError' ? '공유가 취소됨' : '오류: ' + e.message, e.name === 'NotAllowedError' ? '' : 'error');
+async function disconnectHeyGen(){
+  if(hgSession){
+    try {
+      await hgFetch('/v1/streaming.stop',{method:'POST',body:JSON.stringify({session_id:hgSession.session_id})});
+    } catch(e){}
+    hgSession.pc.close();
+    hgSession = null;
   }
+  onHGDisconnected();
 }
 
-function setupAnalyser(stream) {
-  audioCtx2 = new AudioContext();
-  const src = audioCtx2.createMediaStreamSource(stream);
-  analyser2 = audioCtx2.createAnalyser();
-  analyser2.fftSize = 2048;
-  analyser2.smoothingTimeConstant = 0.82;
-  src.connect(analyser2);
-  freqData2 = new Uint8Array(analyser2.frequencyBinCount);
-  liveCapturing = true;
-  freqCanvas.classList.add('visible');
-  levelBarWrap.classList.add('visible');
-  analyzeLive();
+function onHGDisconnected(){
+  hgConnected = false;
+  const videoEl = document.getElementById('hg-video');
+  videoEl.classList.remove('visible');
+  videoEl.srcObject = null;
+  canvas.classList.remove('hidden');
+  document.getElementById('conn-badge').classList.remove('show');
+  document.getElementById('fallback-opts').style.display = '';
+  setPill('');
+  setHGStatus('연결 해제됨','');
 }
 
-function setCapturingUI(statusText, btnText) {
-  setLiveStatus(statusText, 'capturing');
-  document.getElementById('live-btn').textContent = btnText;
-  document.getElementById('live-btn').className = 'btn-live capturing';
+async function hgSpeak(text){
+  if(!hgConnected || !hgSession) return false;
+  await hgFetch('/v1/streaming.task',{
+    method:'POST',
+    body: JSON.stringify({ session_id: hgSession.session_id, text, task_type: 'talk' })
+  });
+  return true;
 }
 
-function stopCapture() {
-  liveCapturing = false;
-  if (captureStream) { captureStream.getTracks().forEach(t => t.stop()); captureStream = null; }
-  if (audioCtx2) { audioCtx2.close(); audioCtx2 = null; }
-  if (liveRafId) { cancelAnimationFrame(liveRafId); liveRafId = null; }
-  st.openTarget = 0; st.wideTarget = 0.5;
-  freqCanvas.classList.remove('visible');
-  levelBarWrap.classList.remove('visible');
-  document.getElementById('live-btn').textContent = currentMethod === 'mic' ? '🎤 마이크 입력 시작' : '🖥️ 화면 공유로 캡처 시작';
-  document.getElementById('live-btn').className = 'btn-live';
-  setLiveStatus('캡처 종료', '');
+function showLoading(msg){ const o=document.getElementById('loading-overlay');o.querySelector('#loading-text').textContent=msg;o.classList.add('show'); }
+function hideLoading(){ document.getElementById('loading-overlay').classList.remove('show'); }
+function setHGStatus(t,m){ document.getElementById('hg-status').textContent=t; document.getElementById('hg-dot').className='dot '+(m||''); }
+function setPill(s){ const p=document.getElementById('hg-pill');p.className='hg-status-pill'+(s?' '+s:'');p.textContent={connected:'연결됨',connecting:'연결 중',error:'오류'}[s]||'미연결'; }
+
+function toggleHGPanel(){
+  const h=document.getElementById('hg-header');const b=document.getElementById('hg-body');
+  h.classList.toggle('open');b.classList.toggle('collapsed');
 }
 
-function analyzeLive() {
-  if (!liveCapturing) return;
-  liveRafId = requestAnimationFrame(analyzeLive);
-  analyser2.getByteFrequencyData(freqData2);
+// ═══════════════════════════════════════════════
+//  TTS (Canvas fallback)
+// ═══════════════════════════════════════════════
+const synth = window.speechSynthesis;
+let utt=null, visemeTimer=null;
 
-  const sr = audioCtx2.sampleRate;
-  const bin = sr / analyser2.fftSize;
+function loadVoicesFallback(){
+  const sel=document.getElementById('voice-select');
+  const vs=synth.getVoices();if(!vs.length){setTimeout(loadVoicesFallback,300);return;}
+  sel.innerHTML='';vs.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;sel.appendChild(o);});
+  const ko=vs.findIndex(v=>v.lang.startsWith('ko'));if(ko>=0)sel.value=ko;
+}
+synth.onvoiceschanged=loadVoicesFallback;loadVoicesFallback();
 
-  // Speech band energy 200–4000 Hz
-  const lo = Math.max(1, Math.floor(200 / bin));
-  const hi = Math.min(freqData2.length - 1, Math.floor(4000 / bin));
-  let sumSpeech = 0;
-  for (let i = lo; i <= hi; i++) sumSpeech += freqData2[i];
-  const avgSpeech = sumSpeech / (hi - lo + 1);
+function setTTSStatus(t,m){document.getElementById('tts-status').textContent=t;document.getElementById('tts-dot').className='dot '+(m||'');document.getElementById('speak-btn').className='btn-primary'+(m==='speaking'?' speaking':'');}
 
-  // High-freq 1500–4000 Hz (bright/consonant)
-  const loH = Math.max(1, Math.floor(1500 / bin));
-  let sumHigh = 0;
-  for (let i = loH; i <= hi; i++) sumHigh += freqData2[i];
-  const avgHigh = sumHigh / (hi - loH + 1);
+async function speak(){
+  const text=document.getElementById('text-input').value.trim();if(!text)return;
 
-  // Low-freq 200–800 Hz (vowel fundamentals → open)
-  const hiL = Math.floor(800 / bin);
-  let sumLow = 0;
-  for (let i = lo; i <= hiL; i++) sumLow += freqData2[i];
-  const avgLow = sumLow / (hiL - lo + 1);
-
-  const sens = parseFloat(document.getElementById('sensitivity').value);
-
-  // Noise gate: below threshold → close mouth
-  const noiseGate = sens * 0.28;
-  if (avgSpeech < noiseGate) {
-    st.openTarget = 0;
-    st.wideTarget = 0.5;
-    levelBar.style.width = '0%';
-    drawFreqViz();
+  // HeyGen mode
+  if(hgConnected){
+    setTTSStatus('HeyGen 아바타 말하는 중...','speaking');
+    document.getElementById('speak-btn').className='btn-primary speaking';
+    try {
+      await hgSpeak(text);
+      // Estimate duration and reset UI
+      const dur = Math.max(text.length * 120, 2000);
+      setTimeout(()=>setTTSStatus('완료 ✓',''),dur);
+    } catch(e){ setTTSStatus('오류: '+e.message,'error'); }
     return;
   }
 
-  // Open: driven by low-freq energy (jaw drop)
-  const rawOpen = Math.min(avgSpeech / sens, 1.0);
-  st.openTarget = Math.pow(rawOpen, 0.6);
-
-  // Wide: ratio of high/low energy → high ratio = bright vowel (E/I) = wide
-  // low ratio = round vowel (O/U) = pursed
-  const brightness = avgHigh / Math.max(avgLow, 1);
-  // brightness ~0.3-1.5 typical range
-  const wideRaw = Math.min((brightness - 0.3) / 1.0, 1.0);
-  st.wideTarget = Math.max(0.1, Math.min(0.95, wideRaw));
-
-  levelBar.style.width = (st.openTarget * 100) + '%';
-  drawFreqViz();
+  // Canvas fallback mode
+  if(synth.speaking) synth.cancel();
+  clearVisemeSchedule();
+  utt=new SpeechSynthesisUtterance(text);
+  const vs=synth.getVoices();const vi=parseInt(document.getElementById('voice-select').value);
+  if(!isNaN(vi)&&vs[vi])utt.voice=vs[vi];
+  utt.rate=parseFloat(document.getElementById('speed-select').value);
+  utt.pitch=1.15;
+  utt.onstart=()=>{st.speaking=true;setTTSStatus('말하는 중...','speaking');scheduleVisemes(text,utt.rate);};
+  utt.onend=()=>{st.speaking=false;st.openTarget=0;st.wideTarget=0.5;clearVisemeSchedule();setTTSStatus('완료 ✓','');setTimeout(()=>setTTSStatus('준비됨',''),2000);};
+  utt.onerror=()=>{st.speaking=false;clearVisemeSchedule();setTTSStatus('오류','error');};
+  synth.speak(utt);
 }
 
-function drawFreqViz() {
-  const fw = freqCanvas.width, fh = freqCanvas.height;
-  freqCtx.clearRect(0, 0, fw, fh);
-  const barW = Math.ceil(fw / 80);
-  const step = Math.floor(freqData2.length / 80);
-  for (let i = 0; i < 80; i++) {
-    let val = 0;
-    for (let j = 0; j < step; j++) val += freqData2[i * step + j];
-    val /= step;
-    const h = (val / 255) * fh;
-    freqCtx.fillStyle = `hsla(${200 + i * 1.6}, 75%, 62%, 0.82)`;
-    freqCtx.fillRect(i * barW, fh - h, barW - 1, h);
+function scheduleVisemes(text,rate){
+  const msPerChar=1000/(rate*5.5);const frames=[];let t=60;
+  for(const ch of text){const v=charToViseme(ch);if(v)frames.push({at:t,...v});t+=/\s/.test(ch)?msPerChar*0.4:msPerChar;}
+  const start=Date.now();let idx=0;
+  visemeTimer=setInterval(()=>{
+    if(!st.speaking||idx>=frames.length){clearVisemeSchedule();return;}
+    const now=Date.now()-start;while(idx<frames.length&&frames[idx].at<=now){st.openTarget=frames[idx].open;st.wideTarget=frames[idx].wide;idx++;}
+  },16);
+}
+function clearVisemeSchedule(){if(visemeTimer){clearInterval(visemeTimer);visemeTimer=null;}}
+
+function stopSpeaking(){
+  if(hgConnected){
+    // Send interrupt task
+    if(hgSession) hgFetch('/v1/streaming.task',{method:'POST',body:JSON.stringify({session_id:hgSession.session_id,text:'.',task_type:'repeat'})}).catch(()=>{});
+  } else {
+    synth.cancel();st.speaking=false;st.openTarget=0;st.wideTarget=0.5;clearVisemeSchedule();
   }
+  setTTSStatus('멈춤','');
 }
 
-// ════════════════════════════════════════
-//  TABS
-// ════════════════════════════════════════
-function switchTab(name) {
-  document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', (i === 0 && name === 'tts') || (i === 1 && name === 'live'));
-  });
-  document.getElementById('tab-tts').classList.toggle('active', name === 'tts');
-  document.getElementById('tab-live').classList.toggle('active', name === 'live');
+document.getElementById('text-input').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();speak();}});
+
+// ═══════════════════════════════════════════════
+//  LIVE AUDIO (Canvas only)
+// ═══════════════════════════════════════════════
+let liveCapturing=false,currentMethod='mic';
+let audioCtx2=null,analyser2=null,freqData2=null,captureStream=null,liveRafId=null;
+const freqCanvas=document.getElementById('freq-canvas');const freqCtx2=freqCanvas.getContext('2d');
+const levelBar=document.getElementById('level-bar');const levelBarWrap=document.getElementById('level-bar-wrap');
+document.getElementById('sensitivity').addEventListener('input',function(){document.getElementById('sens-val').textContent=this.value;});
+
+function switchMethod(m){
+  if(liveCapturing)stopCapture();currentMethod=m;
+  document.getElementById('mtab-mic').classList.toggle('active',m==='mic');document.getElementById('mtab-screen').classList.toggle('active',m==='screen');
+  document.getElementById('method-mic').style.display=m==='mic'?'':'none';document.getElementById('method-screen').style.display=m==='screen'?'':'none';
+  document.getElementById('live-btn').textContent=m==='mic'?'🎤 마이크 입력 시작':'🖥️ 화면 공유로 캡처 시작';document.getElementById('live-btn').className='btn-live';setLiveStatus('대기 중','');
 }
+async function refreshMics(){
+  try{await navigator.mediaDevices.getUserMedia({audio:true}).then(s=>s.getTracks().forEach(t=>t.stop())).catch(()=>{});
+  const ds=await navigator.mediaDevices.enumerateDevices();const sel=document.getElementById('mic-select');sel.innerHTML='';
+  ds.filter(d=>d.kind==='audioinput').forEach(d=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||'마이크 '+d.deviceId.slice(0,6);sel.appendChild(o);});}catch(e){}
+}
+refreshMics();
+function setLiveStatus(t,m){document.getElementById('live-status').textContent=t;document.getElementById('live-dot').className='dot '+(m||'');}
+async function toggleCapture(){if(liveCapturing){stopCapture();return;}if(currentMethod==='mic')await startMicCapture();else await startScreenCapture();}
+async function startMicCapture(){
+  setLiveStatus('마이크 권한 요청 중...','');
+  try{const did=document.getElementById('mic-select').value;captureStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:did?{exact:did}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});setupLiveAnalyser(captureStream);setCapturingUI('🎤 마이크 캡처 중 — AI 소리에 맞춰 입이 움직입니다','🎤 캡처 중지');captureStream.getAudioTracks()[0].onended=()=>stopCapture();}
+  catch(e){setLiveStatus(e.name==='NotAllowedError'?'❌ 마이크 권한 거부':'오류: '+e.message,'error');}
+}
+async function startScreenCapture(){
+  setLiveStatus('화면 공유 창 대기 중...','');
+  try{captureStream=await navigator.mediaDevices.getDisplayMedia({video:{width:1,height:1,frameRate:1},audio:{echoCancellation:false,noiseSuppression:false}});
+  if(captureStream.getAudioTracks().length===0){setLiveStatus('⚠️ "시스템 오디오 공유" 체크 후 재시도','error');captureStream.getTracks().forEach(t=>t.stop());captureStream=null;return;}
+  captureStream.getVideoTracks().forEach(t=>t.stop());setupLiveAnalyser(captureStream);setCapturingUI('🖥️ 화면 공유 캡처 중','⏹ 캡처 중지');captureStream.getAudioTracks()[0].onended=()=>stopCapture();}
+  catch(e){setLiveStatus(e.name==='NotAllowedError'?'공유 취소됨':'오류: '+e.message,'error');}
+}
+function setupLiveAnalyser(stream){
+  audioCtx2=new AudioContext();const src=audioCtx2.createMediaStreamSource(stream);
+  analyser2=audioCtx2.createAnalyser();analyser2.fftSize=2048;analyser2.smoothingTimeConstant=0.82;
+  src.connect(analyser2);freqData2=new Uint8Array(analyser2.frequencyBinCount);
+  liveCapturing=true;freqCanvas.classList.add('visible');levelBarWrap.classList.add('visible');analyzeLive();
+}
+function setCapturingUI(s,b){setLiveStatus(s,'capturing');const btn=document.getElementById('live-btn');btn.textContent=b;btn.className='btn-live capturing';}
+function stopCapture(){
+  liveCapturing=false;if(captureStream){captureStream.getTracks().forEach(t=>t.stop());captureStream=null;}
+  if(audioCtx2){audioCtx2.close();audioCtx2=null;}if(liveRafId){cancelAnimationFrame(liveRafId);liveRafId=null;}
+  st.openTarget=0;st.wideTarget=0.5;freqCanvas.classList.remove('visible');levelBarWrap.classList.remove('visible');
+  document.getElementById('live-btn').textContent=currentMethod==='mic'?'🎤 마이크 입력 시작':'🖥️ 화면 공유로 캡처 시작';document.getElementById('live-btn').className='btn-live';setLiveStatus('캡처 종료','');
+}
+function analyzeLive(){
+  if(!liveCapturing)return;liveRafId=requestAnimationFrame(analyzeLive);analyser2.getByteFrequencyData(freqData2);
+  const sr=audioCtx2.sampleRate,bin=sr/analyser2.fftSize;
+  const lo=Math.max(1,Math.floor(200/bin)),hi=Math.min(freqData2.length-1,Math.floor(4000/bin));
+  let sum=0;for(let i=lo;i<=hi;i++)sum+=freqData2[i];const avg=sum/(hi-lo+1);
+  const loH=Math.max(1,Math.floor(1500/bin));let sumH=0;for(let i=loH;i<=hi;i++)sumH+=freqData2[i];const avgH=sumH/(hi-loH+1);
+  const hiL=Math.floor(800/bin);let sumL=0;for(let i=lo;i<=hiL;i++)sumL+=freqData2[i];const avgL=sumL/(hiL-lo+1);
+  const sens=parseFloat(document.getElementById('sensitivity').value);
+  if(avg<sens*0.28){st.openTarget=0;st.wideTarget=0.5;levelBar.style.width='0%';drawFreqViz();return;}
+  st.openTarget=Math.pow(Math.min(avg/sens,1),0.6);
+  const br=avgH/Math.max(avgL,1);st.wideTarget=Math.max(0.1,Math.min(0.95,(br-0.3)/1.0));
+  levelBar.style.width=(st.openTarget*100)+'%';drawFreqViz();
+}
+function drawFreqViz(){
+  const fw=freqCanvas.width,fh=freqCanvas.height;freqCtx2.clearRect(0,0,fw,fh);
+  const bw=Math.ceil(fw/80),step=Math.floor(freqData2.length/80);
+  for(let i=0;i<80;i++){let v=0;for(let j=0;j<step;j++)v+=freqData2[i*step+j];v/=step;const h=(v/255)*fh;freqCtx2.fillStyle=`hsla(${200+i*1.6},75%,62%,0.82)`;freqCtx2.fillRect(i*bw,fh-h,bw-1,h);}
+}
+
+// ═══════════════════════════════════════════════
+//  TABS & INIT
+// ═══════════════════════════════════════════════
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&n==='tts')||(i===1&&n==='live')));
+  document.getElementById('tab-tts').classList.toggle('active',n==='tts');
+  document.getElementById('tab-live').classList.toggle('active',n==='live');
+}
+
+// Init: restore saved API key and load avatars
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('hg_api_key');
+  if(saved){ document.getElementById('api-key').value=saved; loadAvatars(); }
+});
+document.getElementById('api-key').addEventListener('change',()=>loadAvatars());
 </script>
 </body>
 </html>
