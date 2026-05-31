@@ -3,13 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 립싱크 — LiveAvatar</title>
-<!-- LiveKit WebRTC SDK -->
-<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
+<title>AI 립싱크 캐릭터</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  background: #0d0d1a; color: #fff;
+  background: #0a0a14; color: #fff;
   font-family: 'Segoe UI', Tahoma, sans-serif;
   display: flex; flex-direction: column; align-items: center;
   min-height: 100vh; padding: 16px; gap: 14px;
@@ -19,594 +17,816 @@ h1 {
   background: linear-gradient(135deg, #c084fc, #60a5fa, #f472b6);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-/* ── Character container ── */
-#char-wrap {
-  width: 400px; height: 440px; border-radius: 24px;
-  border: 1px solid rgba(192,132,252,0.2);
-  box-shadow: 0 0 60px rgba(192,132,252,0.1);
-  overflow: hidden; position: relative; background: #0a0a14;
+#wrap {
+  width: 420px; height: 460px; border-radius: 28px;
+  border: 1px solid rgba(192,132,252,0.18);
+  box-shadow: 0 0 80px rgba(192,132,252,0.12), 0 0 0 1px rgba(255,255,255,0.04);
+  overflow: hidden; position: relative; background: #0d0d1a;
 }
-#canvas { position: absolute; top: 0; left: 0; transition: opacity 0.5s; }
-#hg-video {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  object-fit: cover; opacity: 0; transition: opacity 0.6s;
+canvas { display: block; image-rendering: -webkit-optimize-contrast; }
+#level-wrap {
+  position: absolute; bottom: 12px; left: 14px; right: 14px;
+  height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px;
+  overflow: hidden; opacity: 0; transition: opacity 0.3s;
 }
-#hg-video.visible { opacity: 1; }
-#canvas.hidden { opacity: 0; pointer-events: none; }
-#conn-badge {
-  position: absolute; top: 10px; left: 10px;
-  background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-  border: 1px solid rgba(74,222,128,0.3);
-  border-radius: 20px; padding: 4px 12px;
-  font-size: 12px; font-weight: 600; display: none; align-items: center; gap: 6px;
-}
-#conn-badge.show { display: flex; }
-.dot-live { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: blink .9s ease-in-out infinite; }
-#loading-overlay {
-  position: absolute; inset: 0; background: rgba(10,10,20,0.88);
-  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
-  font-size: 13px; color: rgba(255,255,255,0.7);
-}
-#loading-overlay.show { display: flex; }
-.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(192,132,252,0.25); border-top-color: #c084fc; animation: spin 0.9s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-#level-bar-wrap { position: absolute; bottom: 10px; left: 10px; right: 10px; height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; opacity: 0; transition: opacity 0.3s; }
-#level-bar-wrap.visible { opacity: 1; }
-#level-bar { height: 100%; width: 0%; background: linear-gradient(90deg,#60a5fa,#c084fc,#f472b6); transition: width 0.04s; }
-
-/* ── Panels ── */
-.panel { width: 400px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; overflow: hidden; }
-.ph { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; user-select: none; font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.8); }
-.ph:hover { background: rgba(255,255,255,0.03); }
-.ph .chev { transition: transform 0.2s; font-size: 11px; }
-.ph.open .chev { transform: rotate(180deg); }
-.pb { padding: 14px; display: flex; flex-direction: column; gap: 11px; }
-.pb.hide { display: none; }
-.pill { font-size: 11px; padding: 3px 9px; border-radius: 10px; font-weight: 600; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); }
-.pill.connected { background: rgba(74,222,128,0.15); color: #4ade80; }
-.pill.connecting { background: rgba(251,191,36,0.15); color: #fbbf24; animation: pulse 1s ease-in-out infinite; }
-.pill.error { background: rgba(248,113,113,0.15); color: #f87171; }
-
-/* ── Tabs ── */
-.tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.08); }
+#level-wrap.show { opacity: 1; }
+#level-bar { height: 100%; width: 0%; background: linear-gradient(90deg,#60a5fa,#c084fc,#f472b6); }
+.panel { width: 420px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 18px; overflow: hidden; }
+.tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.07); }
 .tab { flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; color: rgba(255,255,255,0.38); border: none; background: none; transition: all 0.2s; }
 .tab.active { color: #c084fc; border-bottom: 2px solid #c084fc; margin-bottom: -1px; }
 .tb { display: none; padding: 14px; flex-direction: column; gap: 11px; }
 .tb.active { display: flex; }
-
-/* ── Form ── */
-textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.3); border-radius: 11px; color: #fff; padding: 10px 12px; font-size: 13.5px; line-height: 1.6; resize: vertical; min-height: 78px; font-family: inherit; transition: border-color 0.2s; }
+textarea { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.25); border-radius: 11px; color: #fff; padding: 10px 13px; font-size: 13.5px; line-height: 1.6; resize: vertical; min-height: 78px; font-family: inherit; }
 textarea:focus { outline: none; border-color: #c084fc; }
-textarea::placeholder { color: rgba(255,255,255,0.28); }
-input[type=text], input[type=password] { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(192,132,252,0.25); border-radius: 10px; color: #fff; padding: 9px 12px; font-size: 13px; font-family: inherit; }
-input:focus { outline: none; border-color: #c084fc; }
-input::placeholder { color: rgba(255,255,255,0.28); }
+textarea::placeholder { color: rgba(255,255,255,0.25); }
 .row { display: flex; gap: 9px; align-items: center; }
-select { flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(192,132,252,0.25); border-radius: 10px; color: #fff; padding: 8px 10px; font-size: 12.5px; cursor: pointer; }
+select { flex: 1; background: rgba(0,0,0,0.35); border: 1px solid rgba(192,132,252,0.22); border-radius: 10px; color: #fff; padding: 8px 10px; font-size: 12.5px; cursor: pointer; }
 select:focus { outline: none; border-color: #c084fc; }
 select option { background: #1a1a2e; }
-label { font-size: 12px; color: rgba(255,255,255,0.45); white-space: nowrap; }
-
-/* ── Buttons ── */
+label { font-size: 12px; color: rgba(255,255,255,0.42); white-space: nowrap; }
 button { padding: 10px 15px; border: none; border-radius: 11px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.18s; }
-.btn-p { flex: 1; background: linear-gradient(135deg,#c084fc,#818cf8); color:#fff; box-shadow:0 4px 16px rgba(192,132,252,0.25); }
+.btn-p { flex: 1; background: linear-gradient(135deg,#c084fc,#818cf8); color:#fff; box-shadow:0 4px 16px rgba(192,132,252,0.22); }
 .btn-p:hover { opacity:0.9; transform:translateY(-1px); }
-.btn-p:disabled { opacity:0.4; cursor:default; transform:none; }
-.btn-p.speaking { background: linear-gradient(135deg,#f472b6,#c084fc); animation: pulse 1.2s ease-in-out infinite; }
-.btn-g { background: linear-gradient(135deg,#34d399,#059669); color:#fff; flex:1; box-shadow:0 4px 14px rgba(52,211,153,0.2); }
-.btn-g:hover { opacity:0.9; transform:translateY(-1px); }
-.btn-s { background: rgba(255,255,255,0.07); color:rgba(255,255,255,0.65); border:1px solid rgba(255,255,255,0.1); }
-.btn-s:hover { background:rgba(255,255,255,0.12); }
+.btn-p.speaking { background: linear-gradient(135deg,#f472b6,#c084fc); animation: pulse 1.1s ease-in-out infinite; }
+.btn-s { background: rgba(255,255,255,0.07); color:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.1); }
+.btn-s:hover { background:rgba(255,255,255,0.11); }
 .btn-live { width:100%; padding:13px; border-radius:13px; font-size:14px; background: linear-gradient(135deg,#34d399,#059669); color:#fff; }
 .btn-live:hover { opacity:0.9; transform:translateY(-1px); }
-.btn-live.capturing { background: linear-gradient(135deg,#f87171,#dc2626); animation:pulse 1s ease-in-out infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.75} }
-
-/* ── Status / misc ── */
-.sbar { display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.38); }
+.btn-live.on { background: linear-gradient(135deg,#f87171,#dc2626); animation:pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.72} }
+.sbar { display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,0.36); }
 .dot { width:7px; height:7px; border-radius:50%; background:#4ade80; flex-shrink:0; }
-.dot.speaking { background:#f472b6; animation:blink .8s ease-in-out infinite; }
-.dot.capturing { background:#34d399; animation:blink .6s ease-in-out infinite; }
-.dot.error { background:#f87171; }
-.mtab { flex:1; padding:8px; border:1px solid rgba(255,255,255,0.1); border-radius:9px; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); font-size:12.5px; font-weight:600; cursor:pointer; transition:all 0.2s; }
-.mtab.active { background:rgba(192,132,252,0.15); border-color:#c084fc; color:#c084fc; }
-.ibox { background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.18); border-radius:11px; padding:11px 13px; font-size:12.5px; line-height:1.7; color:rgba(255,255,255,0.62); }
+.dot.on { background:#f472b6; animation:blink .8s ease-in-out infinite; }
+.dot.live { background:#34d399; animation:blink .6s ease-in-out infinite; }
+.dot.err { background:#f87171; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.22} }
+.mtabs { display:flex; gap:8px; }
+.mt { flex:1; padding:8px; border:1px solid rgba(255,255,255,0.1); border-radius:9px; background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.48); font-size:12.5px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.mt.active { background:rgba(192,132,252,0.14); border-color:#c084fc; color:#c084fc; }
+.ibox { background:rgba(96,165,250,0.07); border:1px solid rgba(96,165,250,0.16); border-radius:11px; padding:11px 13px; font-size:12.5px; line-height:1.7; color:rgba(255,255,255,0.6); }
 .ibox strong { color:#93c5fd; }
 .ibox ol { padding-left:16px; margin-top:5px; }
 .srow { display:flex; align-items:center; gap:9px; }
 input[type=range] { flex:1; accent-color:#c084fc; cursor:pointer; }
-.sv { font-size:12px; color:rgba(255,255,255,0.38); width:26px; text-align:right; }
-#freq-canvas { width:100%; height:44px; border-radius:8px; background:rgba(0,0,0,0.2); display:none; }
-#freq-canvas.visible { display:block; }
-.avatar-prev { display:flex; align-items:center; gap:10px; }
-.av-thumb { width:46px; height:46px; border-radius:9px; object-fit:cover; border:2px solid rgba(192,132,252,0.3); }
-.av-info { font-size:12px; color:rgba(255,255,255,0.5); }
-.av-info strong { color:#fff; font-size:13px; display:block; }
+.sv { font-size:12px; color:rgba(255,255,255,0.36); width:24px; text-align:right; }
+#fq { width:100%; height:44px; border-radius:8px; background:rgba(0,0,0,0.18); display:none; }
+#fq.show { display:block; }
 </style>
 </head>
 <body>
+<h1>✨ AI 립싱크 캐릭터</h1>
 
-<h1>✨ AI 립싱크 — LiveAvatar</h1>
-
-<div id="char-wrap">
-  <canvas id="canvas" width="400" height="440"></canvas>
-  <video id="hg-video" autoplay playsinline></video>
-  <div id="conn-badge"><span class="dot-live"></span><span id="badge-text">연결됨</span></div>
-  <div id="loading-overlay"><div class="spinner"></div><span id="loading-text">연결 중...</span></div>
-  <div id="level-bar-wrap"><div id="level-bar"></div></div>
+<div id="wrap">
+  <canvas id="cv" width="420" height="460"></canvas>
+  <div id="level-wrap"><div id="level-bar"></div></div>
 </div>
 
-<!-- ── LiveAvatar Settings ── -->
-<div class="panel">
-  <div class="ph open" id="la-ph" onclick="togglePanel()">
-    <span>⚡ LiveAvatar 설정</span>
-    <div style="display:flex;gap:8px;align-items:center">
-      <span class="pill" id="la-pill">미연결</span>
-      <span class="chev">▼</span>
-    </div>
-  </div>
-  <div class="pb" id="la-pb">
-    <div>
-      <label style="display:block;margin-bottom:5px">LiveAvatar API Key <span style="color:rgba(255,255,255,0.3);font-size:11px">(app.liveavatar.com/developers)</span></label>
-      <div style="display:flex;gap:6px">
-        <input type="text" id="api-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" style="flex:1;font-family:monospace;font-size:12px">
-        <button class="btn-s" style="padding:8px 10px;font-size:12px;white-space:nowrap" onclick="clearKey()">🗑 초기화</button>
-      </div>
-      <div id="key-hint" style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:-4px">LiveAvatar 키: 60518bc0-xxxx-xxxx-xxxx-xxxxxxxxxxxx 형식</div>
-    </div>
-    <div class="row">
-      <div id="av-prev" class="avatar-prev" style="display:none">
-        <img class="av-thumb" id="av-thumb" src="" alt="">
-        <div class="av-info"><strong id="av-name"></strong>선택됨</div>
-      </div>
-      <select id="avatar-sel" style="flex:1"><option value="">— API Key 입력 후 로드 —</option></select>
-      <button class="btn-s" style="padding:7px 10px;font-size:12px" onclick="loadAvatars()" title="새로고침">↻</button>
-    </div>
-    <div class="row">
-      <label>음성</label>
-      <select id="voice-sel"><option value="">로딩...</option></select>
-    </div>
-    <div class="row">
-      <button class="btn-g" onclick="connectLA()">▶ 연결 시작</button>
-      <button class="btn-s" onclick="disconnectLA()">■ 연결 해제</button>
-    </div>
-    <div class="sbar"><div class="dot" id="la-dot"></div><span id="la-status">API Key를 입력하고 연결하세요</span></div>
-  </div>
-</div>
-
-<!-- ── Controls ── -->
 <div class="panel">
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('tts')">🎙️ TTS 모드</button>
-    <button class="tab" onclick="switchTab('live')">🔴 Live 모드</button>
+    <button class="tab active" onclick="ST('tts')">🎙️ TTS 모드</button>
+    <button class="tab" onclick="ST('live')">🔴 Live 모드</button>
   </div>
 
-  <div class="tb active" id="tab-tts">
-    <textarea id="txt" placeholder="텍스트를 입력하세요... (Ctrl+Enter)&#10;LiveAvatar 연결 시 포토리얼 아바타가 말합니다&#10;미연결 시 애니메이션 캐릭터 + 브라우저 TTS">안녕하세요! 저는 AI 아바타예요. 무엇이든 말해보세요!</textarea>
-    <div id="fallback-opts">
-      <div class="row">
-        <label>브라우저 목소리</label>
-        <select id="fbv-sel"><option value="-1">로딩 중...</option></select>
-        <label>속도</label>
-        <select id="spd-sel">
-          <option value="0.8">느리게</option>
-          <option value="1.0" selected>기본</option>
-          <option value="1.2">빠르게</option>
-        </select>
-      </div>
+  <div class="tb active" id="t-tts">
+    <textarea id="txt" placeholder="텍스트를 입력하세요... (Ctrl+Enter)">안녕하세요! 저는 AI 립싱크 캐릭터예요. 말하기 버튼을 눌러보세요!</textarea>
+    <div class="row">
+      <label>목소리</label>
+      <select id="vsel"><option value="-1">로딩 중...</option></select>
+      <label>속도</label>
+      <select id="spd">
+        <option value="0.75">느리게</option>
+        <option value="1.0" selected>기본</option>
+        <option value="1.25">빠르게</option>
+        <option value="1.5">매우 빠르게</option>
+      </select>
     </div>
     <div class="row">
-      <button class="btn-p" id="speak-btn" onclick="speak()">🎙️ 말하기</button>
+      <button class="btn-p" id="spk-btn" onclick="speak()">🎙️ 말하기</button>
       <button class="btn-s" onclick="stopSpeak()">⏹ 멈추기</button>
     </div>
-    <div class="sbar"><div class="dot" id="tts-dot"></div><span id="tts-st">준비됨</span></div>
+    <div class="sbar"><div class="dot" id="tts-dot"></div><span id="tts-st">준비됨 — Ctrl+Enter로 빠르게</span></div>
   </div>
 
-  <div class="tb" id="tab-live">
-    <div style="display:flex;gap:8px">
-      <button class="mtab active" id="mtab-mic" onclick="switchMethod('mic')">🎤 마이크 입력</button>
-      <button class="mtab" id="mtab-scr" onclick="switchMethod('screen')">🖥️ 화면 공유</button>
+  <div class="tb" id="t-live">
+    <div class="mtabs">
+      <button class="mt active" id="mt-mic" onclick="SM('mic')">🎤 마이크</button>
+      <button class="mt" id="mt-scr" onclick="SM('screen')">🖥️ 화면 공유</button>
     </div>
     <div id="m-mic">
-      <div class="ibox"><strong>PC 오디오에 실시간 립싱크</strong><br>스테레오 믹스 활성화 시 PC 전체 소리 캡처 가능.<br>Live 모드는 캔버스 캐릭터 사용 (실시간성 우선).</div>
-      <div class="row"><label>입력 장치</label><select id="mic-sel"><option value="">기본 마이크</option></select><button class="btn-s" style="padding:7px 10px;font-size:12px" onclick="refreshMics()">↻</button></div>
+      <div class="ibox"><strong>실시간 오디오 립싱크</strong><br>스테레오 믹스 활성화 시 PC 전체 소리 캡처 가능.</div>
+      <div class="row"><label>입력 장치</label><select id="msel"><option value="">기본 마이크</option></select><button class="btn-s" style="padding:7px 10px;font-size:12px" onclick="refreshMics()">↻</button></div>
     </div>
     <div id="m-scr" style="display:none">
-      <div class="ibox">⚠️ <strong>이 창이 아닌</strong> AI가 말하는 다른 창 선택.<br><ol><li>다른 AI 탭 / 전체 화면 선택</li><li><strong>"시스템 오디오 공유"</strong> 체크 ✓</li><li>공유 클릭</li></ol></div>
+      <div class="ibox">⚠️ <strong>이 창이 아닌</strong> AI가 말하는 다른 창을 선택하세요.<ol><li>다른 AI 탭 / 전체 화면 선택</li><li><strong>"시스템 오디오 공유"</strong> 체크 ✓</li><li>공유 클릭</li></ol></div>
     </div>
-    <canvas id="freq-canvas" width="368" height="44"></canvas>
+    <canvas id="fq" width="392" height="44"></canvas>
     <div class="srow"><label>민감도</label><input type="range" id="sens" min="15" max="180" value="55"><span class="sv" id="sv">55</span></div>
-    <button class="btn-live" id="live-btn" onclick="toggleCapture()">🎤 마이크 입력 시작</button>
+    <button class="btn-live" id="live-btn" onclick="toggleCap()">🎤 마이크 입력 시작</button>
     <div class="sbar"><div class="dot" id="live-dot"></div><span id="live-st">대기 중</span></div>
   </div>
 </div>
 
 <script>
-// ═══════════════════════════════════
-//  CANVAS CHARACTER (fallback)
-// ═══════════════════════════════════
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const W=400,H=440,CX=W/2,CY=H/2-10;
-const st={open:0,openT:0,wide:.5,wideT:.5,blink:0,blinkTimer:2200,blinking:false,glX:0,glT:0,bob:0,breath:0,speaking:false,chk:.28};
-const lerp=(a,b,t)=>a+(b-a)*Math.min(t,1);
-const easeOut=t=>1-Math.pow(1-t,3);
+// ════════════════════════════════════════════════════════
+//  CANVAS + STATE
+// ════════════════════════════════════════════════════════
+const cv = document.getElementById('cv');
+const g  = cv.getContext('2d');
+const W=420, H=460;
+// Character center — slightly up so hair fits
+const CX=210, CY=220;
 
-function render(){
-  ctx.clearRect(0,0,W,H);
-  const bg=ctx.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#131325');bg.addColorStop(1,'#0d0d1a');
-  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-  const glow=ctx.createRadialGradient(CX,CY-30,20,CX,CY-30,210);glow.addColorStop(0,'rgba(192,132,252,0.07)');glow.addColorStop(1,'transparent');
-  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.translate(0,Math.sin(st.bob)*(st.speaking?2.2:.7)+Math.sin(st.breath)*1.1);
-  dBody();dNeck();dHairB();dFace();dEars();dBrows();dEyes();dNose();dMouth();dCheeks();dHairF();dStar();
-  ctx.restore();
+// Global animation state
+const S = {
+  // Viseme (0=rest,1=A,2=I,3=U,4=E,5=O)
+  viseme: 0, visemeT: 0,
+  openness: 0, opennessT: 0,
+  wideRatio: 0, wideRatioT: 0.5,
+  // Eye
+  blink: 0, blinkTimer: 3000, blinking: false,
+  glX: 0, glY: 0, glTimer: 0,
+  // Body
+  bob: 0, bobT: 0,
+  breath: 0, breathT: 0,
+  speaking: false,
+  cheek: 0.22,
+};
+
+const lerp = (a,b,t) => a + (b-a)*Math.min(t,1);
+const ease = t => t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+
+// ── Off-screen buffer for anti-aliasing ──
+const off = document.createElement('canvas');
+off.width = W*2; off.height = H*2;
+const og = off.getContext('2d');
+
+// ════════════════════════════════════════════════════════
+//  DRAW CHARACTER
+// ════════════════════════════════════════════════════════
+function render() {
+  og.clearRect(0,0,W*2,H*2);
+  og.save();
+  og.scale(2,2);
+
+  // Background gradient
+  const bg = og.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#111128'); bg.addColorStop(1,'#0d0d1a');
+  og.fillStyle=bg; og.fillRect(0,0,W,H);
+
+  // Ambient rim glow
+  const glow = og.createRadialGradient(CX,CY-20,30,CX,CY-20,230);
+  glow.addColorStop(0,'rgba(180,120,255,0.06)'); glow.addColorStop(1,'transparent');
+  og.fillStyle=glow; og.fillRect(0,0,W,H);
+
+  const bob = Math.sin(S.bobT)*( S.speaking ? 1.8 : 0.6 );
+  const brth = Math.sin(S.breathT)*1.0;
+  og.save(); og.translate(0, bob+brth);
+
+  drawShadow();
+  drawBodyClothes();
+  drawNeck();
+  drawHairBack();
+  drawFace();
+  drawEars();
+  drawBrows();
+  drawEyes();
+  drawNose();
+  drawMouth();
+  drawCheeks();
+  drawHairFront();
+  drawHairDetail();
+  drawAccessory();
+
+  og.restore();
+  og.restore();
+
+  // Blit to main canvas (2x → 1x = natural AA)
+  g.clearRect(0,0,W,H);
+  g.drawImage(off, 0,0, W*2,H*2, 0,0, W,H);
 }
-function dBody(){ctx.save();const g=ctx.createLinearGradient(CX-110,CY+100,CX+110,H);g.addColorStop(0,'#4c3a9e');g.addColorStop(1,'#2d1f7a');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(CX-110,H);ctx.quadraticCurveTo(CX-120,CY+140,CX-70,CY+95);ctx.quadraticCurveTo(CX-30,CY+80,CX,CY+78);ctx.quadraticCurveTo(CX+30,CY+80,CX+70,CY+95);ctx.quadraticCurveTo(CX+120,CY+140,CX+110,H);ctx.closePath();ctx.fill();ctx.fillStyle='#f5f5ff';ctx.beginPath();ctx.moveTo(CX-28,CY+93);ctx.lineTo(CX,CY+130);ctx.lineTo(CX+28,CY+93);ctx.lineTo(CX+18,CY+87);ctx.lineTo(CX,CY+108);ctx.lineTo(CX-18,CY+87);ctx.closePath();ctx.fill();const lc=ctx.createLinearGradient(CX-70,0,CX-18,0);lc.addColorStop(0,'#e0dff8');lc.addColorStop(1,'#c8c7ee');ctx.fillStyle=lc;ctx.beginPath();ctx.moveTo(CX-65,CY+87);ctx.lineTo(CX-18,CY+87);ctx.lineTo(CX,CY+130);ctx.lineTo(CX-75,CY+108);ctx.closePath();ctx.fill();const rc=ctx.createLinearGradient(CX+18,0,CX+70,0);rc.addColorStop(0,'#c8c7ee');rc.addColorStop(1,'#b8b7de');ctx.fillStyle=rc;ctx.beginPath();ctx.moveTo(CX+65,CY+87);ctx.lineTo(CX+18,CY+87);ctx.lineTo(CX,CY+130);ctx.lineTo(CX+75,CY+108);ctx.closePath();ctx.fill();ctx.restore();}
-function dNeck(){ctx.save();const g=ctx.createLinearGradient(CX-22,0,CX+22,0);g.addColorStop(0,'#f0c4a0');g.addColorStop(.4,'#ffd5b5');g.addColorStop(1,'#e8b890');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(CX-20,CY+62);ctx.lineTo(CX+20,CY+62);ctx.lineTo(CX+22,CY+92);ctx.lineTo(CX-22,CY+92);ctx.closePath();ctx.fill();ctx.restore();}
-function dFace(){ctx.save();const g=ctx.createRadialGradient(CX-25,CY-25,5,CX,CY,105);g.addColorStop(0,'#ffe0c2');g.addColorStop(.5,'#ffd0b0');g.addColorStop(1,'#f0b898');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(CX,CY,93,108,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f5c5a2';ctx.beginPath();ctx.moveTo(CX-70,CY+18);ctx.quadraticCurveTo(CX-82,CY+65,CX,CY+108);ctx.quadraticCurveTo(CX+82,CY+65,CX+70,CY+18);ctx.quadraticCurveTo(CX,CY+35,CX-70,CY+18);ctx.closePath();ctx.fill();ctx.restore();}
-function dEars(){ctx.save();[[-90,-.15],[90,.15]].forEach(([ex,t])=>{ctx.fillStyle='#f0c0a0';ctx.beginPath();ctx.ellipse(CX+ex,CY-5,13,17,t,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e0a880';ctx.beginPath();ctx.ellipse(CX+ex,CY-3,7,11,t,0,Math.PI*2);ctx.fill();});ctx.restore();}
-function dHairB(){ctx.save();const g=ctx.createLinearGradient(CX,CY-120,CX,H);g.addColorStop(0,'#7048c0');g.addColorStop(.4,'#5a35a8');g.addColorStop(1,'#2d1a60');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(CX,CY-28,103,113,0,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.moveTo(CX-82,CY-18);ctx.bezierCurveTo(CX-130,CY+60,CX-120,CY+160,CX-95,H-20);ctx.lineTo(CX-60,H-20);ctx.bezierCurveTo(CX-90,CY+160,CX-100,CY+60,CX-52,CY-8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(CX+82,CY-18);ctx.bezierCurveTo(CX+130,CY+60,CX+120,CY+160,CX+95,H-20);ctx.lineTo(CX+60,H-20);ctx.bezierCurveTo(CX+90,CY+160,CX+100,CY+60,CX+52,CY-8);ctx.closePath();ctx.fill();ctx.restore();}
-function dHairF(){ctx.save();const g=ctx.createLinearGradient(CX,CY-130,CX,CY-10);g.addColorStop(0,'#8855d0');g.addColorStop(1,'#6040b8');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(CX-100,CY-48);ctx.bezierCurveTo(CX-95,CY-132,CX-10,CY-142,CX,CY-142);ctx.bezierCurveTo(CX+10,CY-142,CX+95,CY-132,CX+100,CY-48);ctx.bezierCurveTo(CX+75,CY-38,CX+45,CY-16,CX+25,CY-42);ctx.bezierCurveTo(CX+18,CY-30,CX+8,CY-26,CX,CY-38);ctx.bezierCurveTo(CX-8,CY-26,CX-18,CY-30,CX-25,CY-42);ctx.bezierCurveTo(CX-45,CY-16,CX-75,CY-38,CX-100,CY-48);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(180,140,255,0.38)';ctx.beginPath();ctx.ellipse(CX-18,CY-100,12,28,-.25,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.ellipse(CX+32,CY-95,8,18,.3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#7a4cbe';ctx.beginPath();ctx.moveTo(CX-88,CY-28);ctx.bezierCurveTo(CX-115,CY+5,CX-108,CY+45,CX-90,CY+52);ctx.bezierCurveTo(CX-75,CY+58,CX-68,CY+30,CX-72,CY-20);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(CX+88,CY-28);ctx.bezierCurveTo(CX+115,CY+5,CX+108,CY+45,CX+90,CY+52);ctx.bezierCurveTo(CX+75,CY+58,CX+68,CY+30,CX+72,CY-20);ctx.closePath();ctx.fill();ctx.restore();}
-function dStar(){ctx.save();ctx.fillStyle='#fbbf24';ctx.shadowColor='#f59e0b';ctx.shadowBlur=8;ctx.translate(CX+58,CY-78);ctx.beginPath();for(let i=0;i<10;i++){const r=i%2===0?11:5,a=(i*Math.PI)/5-Math.PI/2;i===0?ctx.moveTo(r*Math.cos(a),r*Math.sin(a)):ctx.lineTo(r*Math.cos(a),r*Math.sin(a));}ctx.closePath();ctx.fill();ctx.restore();}
-function dBrows(){ctx.save();const by=CY-48;ctx.strokeStyle='#4a2888';ctx.lineWidth=3.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(CX-50,by+4);ctx.quadraticCurveTo(CX-32,by-4,CX-14,by+1);ctx.stroke();ctx.beginPath();ctx.moveTo(CX+14,by+1);ctx.quadraticCurveTo(CX+32,by-4,CX+50,by+4);ctx.stroke();ctx.restore();}
-function dEyes(){ctx.save();const bl=st.blink,ey=CY-16,gx=st.glX;[-1,1].forEach(s=>{const ex=CX+s*30,sy=1-bl;ctx.save();ctx.translate(ex,ey);ctx.scale(1,sy);ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(0,0,20,22,0,0,Math.PI*2);ctx.fill();const sh=ctx.createLinearGradient(0,-22,0,5);sh.addColorStop(0,'rgba(150,100,220,0.38)');sh.addColorStop(1,'transparent');ctx.fillStyle=sh;ctx.beginPath();ctx.ellipse(0,-4,20,18,0,0,Math.PI*2);ctx.fill();const ig=ctx.createRadialGradient(gx*4-3,-5,1,gx*4,0,14);ig.addColorStop(0,'#8dd4f8');ig.addColorStop(.35,'#4a96e8');ig.addColorStop(.7,'#2a6ab8');ig.addColorStop(1,'#153d80');ctx.fillStyle=ig;ctx.beginPath();ctx.ellipse(gx*4,0,13,16,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#08152a';ctx.beginPath();ctx.ellipse(gx*4+1,1,6,8,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.95)';ctx.beginPath();ctx.ellipse(gx*4-4,-6,4,4,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.5)';ctx.beginPath();ctx.ellipse(gx*4+5,3,2.5,2.5,0,0,Math.PI*2);ctx.fill();ctx.restore();if(bl<0.6){ctx.save();ctx.strokeStyle='#1a0530';ctx.lineWidth=2;ctx.lineCap='round';const ly=ey-22*(1-bl);for(let i=-3;i<=3;i++){ctx.beginPath();ctx.moveTo(ex+i*5.5,ly);ctx.lineTo(ex+i*6.2,ly-5-Math.abs(i)*.5);ctx.stroke();}ctx.restore();}if(bl>0.05){ctx.save();ctx.beginPath();ctx.rect(ex-26,ey-28,52,28+24*bl);ctx.clip();ctx.fillStyle='#ffd0b0';ctx.beginPath();ctx.ellipse(ex,ey,24,26,0,0,Math.PI*2);ctx.fill();ctx.restore();}});ctx.restore();}
-function dNose(){ctx.save();ctx.strokeStyle='#cc8866';ctx.lineWidth=1.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(CX-6,CY+20);ctx.quadraticCurveTo(CX-4,CY+25,CX,CY+24);ctx.quadraticCurveTo(CX+4,CY+25,CX+6,CY+20);ctx.stroke();ctx.restore();}
-function dMouth(){ctx.save();const o=st.open,w=st.wide,my=CY+52,cx2=22+w*8,ls=o*(3+w*3),ulY=my-ls,llY=my+o*18;if(o>0.03){const cw=cx2-2+o*2,ch=Math.max((llY-ulY)*.55,1);ctx.fillStyle='#160410';ctx.beginPath();ctx.ellipse(CX,ulY+(llY-ulY)*.45,cw,ch,0,0,Math.PI*2);ctx.fill();if(o>0.08){const tw=cw-1,th=Math.min(o*10+w*6,12);ctx.fillStyle='#fffaf8';ctx.beginPath();ctx.ellipse(CX,ulY+1,tw,th,0,Math.PI,2*Math.PI);ctx.fill();}if(o>0.32&&w>0.25){const lh=Math.min((o-.32)*14,9);ctx.fillStyle='#f5eff2';ctx.beginPath();ctx.ellipse(CX,llY*.55+ulY*.45+ch*.6,cw-5,lh,0,0,Math.PI);ctx.fill();}if(o>0.55){const ta=Math.min((o-.55)/.45,1);ctx.fillStyle=`rgba(218,82,95,${ta*.88})`;ctx.beginPath();ctx.ellipse(CX,ulY+(llY-ulY)*.75,(cw-5)*ta*(.7+w*.3),ch*.42*ta,0,0,Math.PI);ctx.fill();}}ctx.fillStyle='#bf4060';ctx.beginPath();ctx.moveTo(CX-cx2,ulY+2);ctx.bezierCurveTo(CX-cx2*.65,ulY-5,CX-cx2*.28,ulY-4,CX-4,ulY-7-o*2);ctx.bezierCurveTo(CX-1.5,ulY-4,CX+1.5,ulY-4,CX+4,ulY-7-o*2);ctx.bezierCurveTo(CX+cx2*.28,ulY-4,CX+cx2*.65,ulY-5,CX+cx2,ulY+2);ctx.bezierCurveTo(CX+cx2*.5,ulY+1,CX,ulY+1.5,CX-cx2*.5,ulY+1);ctx.closePath();ctx.fill();ctx.fillStyle='#cf6080';ctx.beginPath();ctx.moveTo(CX-cx2,ulY+2);ctx.bezierCurveTo(CX-cx2*.5,ulY+8+o*14,CX+cx2*.5,ulY+8+o*14,CX+cx2,ulY+2);ctx.bezierCurveTo(CX+cx2*.6,llY+9,CX,llY+12,CX-cx2*.6,llY+9);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(255,195,210,0.42)';ctx.beginPath();ctx.ellipse(CX+3,llY+7,9+w*4,3.5,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#aa3555';[-cx2,cx2].forEach(ox=>{ctx.beginPath();ctx.arc(CX+ox,ulY+2,2.2,0,Math.PI*2);ctx.fill();});ctx.restore();}
-function dCheeks(){ctx.save();const a=st.chk;[-55,55].forEach(ox=>{const g=ctx.createRadialGradient(CX+ox,CY+22,0,CX+ox,CY+22,28);g.addColorStop(0,`rgba(255,140,165,${a})`);g.addColorStop(1,'transparent');ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(CX+ox,CY+22,28,17,0,0,Math.PI*2);ctx.fill();});ctx.restore();}
 
-let lastTs=0;
-function loop(ts){
-  const dt=Math.min(ts-lastTs,50);lastTs=ts;
-  st.breath+=dt*.0008;st.bob+=dt*.0017*(st.speaking?1.8:.6);
-  st.blinkTimer-=dt;if(st.blinkTimer<=0&&!st.blinking){st.blinkTimer=1800+Math.random()*3500;doBlink();}
-  st.glT-=dt;if(st.glT<=0){st.glT=2200+Math.random()*4000;st.glX=(Math.random()-.5)*1.8;}
-  const atk=dt*.018,rel=dt*.009;
-  st.open=lerp(st.open,st.openT,st.openT>st.open?atk:rel);
-  st.wide=lerp(st.wide,st.wideT,st.wideT>st.wide?atk:rel*1.2);
-  st.chk=lerp(st.chk,(st.speaking||liveCapturing)?.52:.28,dt*.004);
-  render();requestAnimationFrame(loop);
-}
-function doBlink(){st.blinking=true;const dur=130,s=performance.now();function f(t){const p=(t-s)/dur;st.blink=p<.5?easeOut(p*2):easeOut((1-p)*2);if(p<1)requestAnimationFrame(f);else{st.blink=0;st.blinking=false;}}requestAnimationFrame(f);}
-requestAnimationFrame(loop);
-
-function charV(ch){const c=ch.charCodeAt(0);if(c>=0xAC00&&c<=0xD7A3){const j=Math.floor((c-0xAC00)/28)%21;const m=[{o:.80,w:.85},{o:.50,w:.90},{o:.75,w:.82},{o:.45,w:.88},{o:.55,w:.50},{o:.48,w:.82},{o:.50,w:.52},{o:.44,w:.80},{o:.52,w:.20},{o:.68,w:.62},{o:.48,w:.70},{o:.44,w:.60},{o:.48,w:.22},{o:.38,w:.12},{o:.44,w:.42},{o:.40,w:.60},{o:.34,w:.30},{o:.36,w:.14},{o:.20,w:.60},{o:.28,w:.70},{o:.32,w:.92}];return m[j]||{o:.14,w:.55};}switch(ch.toLowerCase()){case'a':return{o:.78,w:.85};case'e':return{o:.48,w:.88};case'i':return{o:.28,w:.95};case'o':return{o:.52,w:.18};case'u':return{o:.36,w:.10};}if(/\s/.test(ch))return null;return{o:.12,w:.52};}
-
-// ═══════════════════════════════════
-//  LIVEAVATAR API
-// ═══════════════════════════════════
-const LA_PROXY = '/api/heygen';
-let laConnected=false, laSession=null, laRoom=null, laSpeakWs=null;
-
-function getKey(){return document.getElementById('api-key').value.trim();}
-function saveKey(k){if(k){localStorage.setItem('la_key',k);}}
-function clearKey(){
-  document.getElementById('api-key').value='';
-  localStorage.removeItem('la_key');
-  localStorage.removeItem('hg_api_key');
-  document.getElementById('avatar-sel').innerHTML='<option value="">— API Key 입력 후 로드 —</option>';
-  document.getElementById('av-prev').style.display='none';
-  setLAStatus('초기화됨 — LiveAvatar API Key를 다시 입력하세요','');
+/* ── Shadow under character ── */
+function drawShadow() {
+  og.save();
+  og.fillStyle = 'rgba(0,0,0,0.18)';
+  og.beginPath(); og.ellipse(CX+4, CY+5, 95, 108, 0, 0, Math.PI*2); og.fill();
+  og.restore();
 }
 
-async function laFetch(path,opts={}){
-  const key=getKey();
-  return fetch(`${LA_PROXY}?p=${encodeURIComponent(path.replace(/^\//,''))}&host=liveavatar`,{
-    ...opts,headers:{'x-api-key':key,'Content-Type':'application/json',...(opts.headers||{})}
+/* ── Body / Clothes ── */
+function drawBodyClothes() {
+  og.save();
+  // Shoulders
+  const sg = og.createLinearGradient(CX-120,CY+90,CX+120,H+20);
+  sg.addColorStop(0,'#3d2c8a'); sg.addColorStop(0.5,'#2e1f6e'); sg.addColorStop(1,'#1a1050');
+  og.fillStyle=sg;
+  og.beginPath();
+  og.moveTo(CX-130,H+10);
+  og.bezierCurveTo(CX-135,CY+160, CX-80,CY+88, CX-40,CY+78);
+  og.bezierCurveTo(CX-15,CY+72, CX,CY+70, CX,CY+70);
+  og.bezierCurveTo(CX,CY+70, CX+15,CY+72, CX+40,CY+78);
+  og.bezierCurveTo(CX+80,CY+88, CX+135,CY+160, CX+130,H+10);
+  og.closePath(); og.fill();
+
+  // Collar area
+  og.fillStyle='#f2f0ff';
+  og.beginPath();
+  og.moveTo(CX-32,CY+88);
+  og.lineTo(CX,CY+128); og.lineTo(CX+32,CY+88);
+  og.lineTo(CX+20,CY+80); og.lineTo(CX,CY+102); og.lineTo(CX-20,CY+80);
+  og.closePath(); og.fill();
+
+  // Left collar shading
+  og.fillStyle='rgba(200,195,240,0.9)';
+  og.beginPath();
+  og.moveTo(CX-68,CY+84); og.lineTo(CX-20,CY+80);
+  og.lineTo(CX,CY+128); og.lineTo(CX-80,CY+108);
+  og.closePath(); og.fill();
+
+  // Right collar shading
+  og.fillStyle='rgba(175,170,215,0.9)';
+  og.beginPath();
+  og.moveTo(CX+68,CY+84); og.lineTo(CX+20,CY+80);
+  og.lineTo(CX,CY+128); og.lineTo(CX+80,CY+108);
+  og.closePath(); og.fill();
+
+  og.restore();
+}
+
+/* ── Neck ── */
+function drawNeck() {
+  og.save();
+  const ng = og.createLinearGradient(CX-22,0,CX+22,0);
+  ng.addColorStop(0,'#f2c4a2'); ng.addColorStop(0.45,'#fdd6b8'); ng.addColorStop(1,'#edb890');
+  og.fillStyle=ng;
+  og.beginPath();
+  og.moveTo(CX-18,CY+60); og.lineTo(CX+18,CY+60);
+  og.lineTo(CX+22,CY+88); og.lineTo(CX-22,CY+88);
+  og.closePath(); og.fill();
+  // Neck shadow
+  og.fillStyle='rgba(160,100,60,0.08)';
+  og.beginPath(); og.ellipse(CX+8,CY+74,10,16,0.2,0,Math.PI*2); og.fill();
+  og.restore();
+}
+
+/* ── Face ── */
+function drawFace() {
+  og.save();
+
+  // Base skin
+  const fg = og.createRadialGradient(CX-30,CY-30,8, CX,CY,110);
+  fg.addColorStop(0,'#ffe4c8');
+  fg.addColorStop(0.45,'#fdd4b2');
+  fg.addColorStop(0.8,'#f5c4a0');
+  fg.addColorStop(1,'#eeaa8a');
+  og.fillStyle=fg;
+  og.beginPath();
+  og.ellipse(CX,CY,92,106,0,0,Math.PI*2);
+  og.fill();
+
+  // Chin highlight
+  const chin = og.createRadialGradient(CX,CY+85,5,CX,CY+85,55);
+  chin.addColorStop(0,'rgba(255,235,215,0.45)');
+  chin.addColorStop(1,'transparent');
+  og.fillStyle=chin; og.beginPath(); og.ellipse(CX,CY+85,55,28,0,0,Math.PI*2); og.fill();
+
+  // Forehead highlight
+  const fh = og.createRadialGradient(CX,CY-60,5,CX,CY-60,60);
+  fh.addColorStop(0,'rgba(255,250,240,0.35)');
+  fh.addColorStop(1,'transparent');
+  og.fillStyle=fh; og.beginPath(); og.ellipse(CX,CY-60,60,35,0,0,Math.PI*2); og.fill();
+
+  // Jaw definition
+  og.fillStyle='rgba(220,150,110,0.12)';
+  og.beginPath();
+  og.moveTo(CX-72,CY+15);
+  og.bezierCurveTo(CX-85,CY+65, CX-40,CY+105, CX,CY+106);
+  og.bezierCurveTo(CX+40,CY+105, CX+85,CY+65, CX+72,CY+15);
+  og.bezierCurveTo(CX+40,CY+30, CX-40,CY+30, CX-72,CY+15);
+  og.closePath(); og.fill();
+
+  og.restore();
+}
+
+/* ── Ears ── */
+function drawEars() {
+  og.save();
+  [[-89,-0.15],[89,0.15]].forEach(([ex,t])=>{
+    const eg = og.createRadialGradient(CX+ex,CY,5,CX+ex,CY,18);
+    eg.addColorStop(0,'#f5c8a8'); eg.addColorStop(1,'#ecb898');
+    og.fillStyle=eg;
+    og.beginPath(); og.ellipse(CX+ex,CY-2,12,16,t,0,Math.PI*2); og.fill();
+    // inner ear
+    og.fillStyle='rgba(220,110,90,0.25)';
+    og.beginPath(); og.ellipse(CX+ex,CY,6,9,t,0,Math.PI*2); og.fill();
   });
+  og.restore();
 }
-async function laFetchBearer(path,token,opts={}){
-  return fetch(`${LA_PROXY}?p=${encodeURIComponent(path.replace(/^\//,''))}&host=liveavatar`,{
-    ...opts,headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json',...(opts.headers||{})}
+
+/* ── Eyebrows ── */
+function drawBrows() {
+  og.save();
+  const by = CY-52;
+  // Left brow
+  const lb = og.createLinearGradient(CX-55,by,CX-10,by);
+  lb.addColorStop(0,'rgba(80,45,140,0.85)');
+  lb.addColorStop(1,'rgba(90,50,150,0.6)');
+  og.strokeStyle=lb; og.lineWidth=3.8; og.lineCap='round';
+  og.beginPath(); og.moveTo(CX-53,by+3); og.bezierCurveTo(CX-36,by-5,CX-20,by-2,CX-10,by+1); og.stroke();
+
+  // Right brow
+  const rb = og.createLinearGradient(CX+10,by,CX+55,by);
+  rb.addColorStop(0,'rgba(90,50,150,0.6)');
+  rb.addColorStop(1,'rgba(80,45,140,0.85)');
+  og.strokeStyle=rb;
+  og.beginPath(); og.moveTo(CX+10,by+1); og.bezierCurveTo(CX+20,by-2,CX+36,by-5,CX+53,by+3); og.stroke();
+  og.restore();
+}
+
+/* ── Eyes ── */
+function drawEyes() {
+  og.save();
+  const ey=CY-17, gx=S.glX*5, gy=S.glY*2;
+  const bl=S.blink;
+
+  [-1,1].forEach(side=>{
+    const ex=CX+side*31;
+
+    og.save();
+    // Clip to eye shape for clean rendering
+    og.beginPath();
+    og.ellipse(ex,ey,21,(22*(1-bl)),0,0,Math.PI*2);
+    og.clip();
+
+    // Sclera (white)
+    const sc=og.createRadialGradient(ex-5,ey-8,0,ex,ey,24);
+    sc.addColorStop(0,'#ffffff'); sc.addColorStop(0.7,'#f5f8ff'); sc.addColorStop(1,'#e8eeff');
+    og.fillStyle=sc; og.beginPath(); og.ellipse(ex,ey,21,22*(1-bl),0,0,Math.PI*2); og.fill();
+
+    // Upper shadow in eye
+    const es=og.createLinearGradient(ex,ey-22,ex,ey-5);
+    es.addColorStop(0,'rgba(130,90,210,0.35)'); es.addColorStop(1,'transparent');
+    og.fillStyle=es; og.fillRect(ex-22,ey-24,44,20);
+
+    // Iris base
+    const iris=og.createRadialGradient(ex+gx-4,ey+gy-6,1, ex+gx,ey+gy,15);
+    iris.addColorStop(0,'#7fd4f8');
+    iris.addColorStop(0.3,'#48a8ee');
+    iris.addColorStop(0.6,'#2278cc');
+    iris.addColorStop(0.85,'#1050a0');
+    iris.addColorStop(1,'#0a2860');
+    og.fillStyle=iris;
+    og.beginPath(); og.ellipse(ex+gx,ey+gy,14,15*(1-bl),0,0,Math.PI*2); og.fill();
+
+    // Iris texture ring
+    og.strokeStyle='rgba(0,60,160,0.25)'; og.lineWidth=1;
+    og.beginPath(); og.ellipse(ex+gx,ey+gy,10,10*(1-bl),0,0,Math.PI*2); og.stroke();
+
+    // Pupil
+    og.fillStyle='#060f22';
+    og.beginPath(); og.ellipse(ex+gx+0.5,ey+gy+1,6.5,7*(1-bl),0,0,Math.PI*2); og.fill();
+
+    // Main catchlight (large)
+    og.fillStyle='rgba(255,255,255,0.96)';
+    og.beginPath(); og.ellipse(ex+gx-5,ey+gy-6,4.5,4.5,0,0,Math.PI*2); og.fill();
+    // Secondary catchlight
+    og.fillStyle='rgba(255,255,255,0.7)';
+    og.beginPath(); og.ellipse(ex+gx+5,ey+gy+1,2.5,2.5,0,0,Math.PI*2); og.fill();
+    // Tiny sparkle
+    og.fillStyle='rgba(200,230,255,0.5)';
+    og.beginPath(); og.ellipse(ex+gx-2,ey+gy+5,1.5,1.5,0,0,Math.PI*2); og.fill();
+
+    // Limbal ring
+    og.strokeStyle='rgba(10,20,80,0.4)'; og.lineWidth=1.5;
+    og.beginPath(); og.ellipse(ex+gx,ey+gy,13,14*(1-bl),0,0,Math.PI*2); og.stroke();
+
+    og.restore();
+
+    // Upper eyelid (drawn outside clip)
+    if(bl<0.7){
+      og.save();
+      og.strokeStyle='#160430'; og.lineWidth=2.5; og.lineCap='round';
+      og.beginPath();
+      og.moveTo(ex-22,ey+2);
+      og.bezierCurveTo(ex-14,ey-22*(1-bl)-4, ex+12,ey-22*(1-bl)-2, ex+22,ey+2);
+      og.stroke();
+
+      // Lashes
+      og.strokeStyle='rgba(15,3,40,0.85)'; og.lineWidth=1.8;
+      const lashY=ey-20*(1-bl);
+      for(let i=-3;i<=3;i++){
+        const lx=ex+i*6.5, ang=-0.3+i*0.08;
+        og.beginPath(); og.moveTo(lx,lashY); og.lineTo(lx+Math.sin(ang)*5, lashY-Math.cos(ang)*7); og.stroke();
+      }
+      og.restore();
+    }
+
+    // Lower lash line
+    og.save();
+    og.strokeStyle='rgba(100,50,160,0.3)'; og.lineWidth=1.2;
+    og.beginPath();
+    og.moveTo(ex-18,ey+20*(1-bl));
+    og.bezierCurveTo(ex,ey+22*(1-bl)+2, ex+18,ey+20*(1-bl), ex+18,ey+20*(1-bl));
+    og.stroke();
+    og.restore();
+
+    // Blink overlay
+    if(bl>0.05){
+      og.save();
+      og.beginPath(); og.rect(ex-26,ey-28,52,28+24*bl); og.clip();
+      const bov=og.createLinearGradient(ex,ey-8,ex,ey+18*bl);
+      bov.addColorStop(0,'#fdd6b4'); bov.addColorStop(1,'#f5c4a0');
+      og.fillStyle=bov; og.beginPath(); og.ellipse(ex,ey,26,28,0,0,Math.PI*2); og.fill();
+      og.restore();
+    }
   });
+  og.restore();
 }
 
-async function loadAvatars(){
-  const key=document.getElementById('api-key').value.trim();
-  if(!key){setLAStatus('API Key를 입력하세요','error');return;}
-  saveKey(key);setLAStatus('아바타 로딩 중...','');
-  try{
-    const r=await laFetch('/v1/avatars/public');const d=await r.json();
-    if(d.code!==1000)throw new Error(d.message);
-    const avs=d.data.results;
-    const sel=document.getElementById('avatar-sel');
-    sel.innerHTML='<option value="">— 아바타 선택 —</option>';
-    avs.forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.name;o.dataset.img=a.preview_url||'';o.dataset.voice=a.default_voice?.id||'';sel.appendChild(o);});
-    await loadVoices();
-    if(avs.length){sel.value=avs[0].id;updateAvPreview();}
-    setLAStatus(`아바타 ${avs.length}개 로드 완료 — 연결 시작을 누르세요`,'');
-  }catch(e){setLAStatus('로드 실패: '+e.message,'error');}
+/* ── Nose ── */
+function drawNose() {
+  og.save();
+  const ny=CY+22;
+  // Nose tip highlight
+  og.fillStyle='rgba(255,235,215,0.4)';
+  og.beginPath(); og.ellipse(CX,ny+5,7,5,0,0,Math.PI*2); og.fill();
+  // Nostrils
+  og.strokeStyle='rgba(190,110,80,0.45)'; og.lineWidth=1.5; og.lineCap='round';
+  og.beginPath(); og.moveTo(CX-7,ny); og.quadraticCurveTo(CX-5,ny+6,CX-1,ny+5); og.stroke();
+  og.beginPath(); og.moveTo(CX+7,ny); og.quadraticCurveTo(CX+5,ny+6,CX+1,ny+5); og.stroke();
+  og.restore();
 }
 
-async function loadVoices(){
-  try{
-    const r=await laFetch('/v1/voices');const d=await r.json();
-    if(d.code!==1000)return;
-    const sel=document.getElementById('voice-sel');sel.innerHTML='';
-    d.data.results.forEach(v=>{const o=document.createElement('option');o.value=v.id;o.textContent=`${v.name} (${v.language})`;sel.appendChild(o);});
-  }catch(e){}
-}
+/* ── Mouth — 5 viseme shapes ── */
+function drawMouth() {
+  og.save();
+  const o = S.openness;     // 0–1: jaw drop
+  const w = S.wideRatio;    // 0–1: lip stretch
+  const my = CY+52;
+  const cx2 = 20 + w*10;   // corner X spread
+  const ulift = o*(2+w*4);  // upper lip rise
 
-function updateAvPreview(){
-  const sel=document.getElementById('avatar-sel');const opt=sel.options[sel.selectedIndex];
-  if(!opt||!opt.value)return;
-  document.getElementById('av-thumb').src=opt.dataset.img||'';
-  document.getElementById('av-name').textContent=opt.textContent;
-  document.getElementById('av-prev').style.display='flex';
-  if(opt.dataset.voice)document.getElementById('voice-sel').value=opt.dataset.voice;
-}
-document.getElementById('avatar-sel').addEventListener('change',updateAvPreview);
+  const ulY = my - ulift;   // upper lip Y
+  const llY = my + o*20;    // lower lip Y
 
-async function stopAllSessions(){
-  try{
-    const r=await laFetch('/v1/sessions?type=active');
-    const d=await r.json();
-    if(d.code===1000&&d.data.results.length>0){
-      for(const s of d.data.results){
-        await laFetch('/v1/sessions/stop',{method:'POST',body:JSON.stringify({session_id:s.id})});
-        console.log('[LA] stopped session',s.id);
+  // ── Interior ──
+  if(o > 0.04) {
+    const cw=cx2-2+o*3, ch=Math.max((llY-ulY)*0.58,1);
+
+    // Mouth cavity
+    og.fillStyle='#110310';
+    og.beginPath(); og.ellipse(CX,ulY+(llY-ulY)*0.44,cw,ch,0,0,Math.PI*2); og.fill();
+
+    // Throat shadow
+    if(o>0.35){
+      const th=og.createRadialGradient(CX,ulY+ch*1.5,0,CX,ulY+ch*1.5,cw*0.7);
+      th.addColorStop(0,'rgba(40,0,20,0.8)'); th.addColorStop(1,'transparent');
+      og.fillStyle=th; og.beginPath(); og.ellipse(CX,ulY+ch*1.5,cw*0.7,ch*0.55,0,0,Math.PI*2); og.fill();
+    }
+
+    // Upper teeth
+    if(o>0.06){
+      const tw=cw-2, th2=Math.min(o*12+w*8,13);
+      og.fillStyle='#fffaf8';
+      og.beginPath(); og.ellipse(CX,ulY+2,tw,th2,0,Math.PI,2*Math.PI); og.fill();
+      // Tooth dividers
+      if(th2>5 && w>0.3){
+        og.strokeStyle='rgba(200,185,190,0.35)'; og.lineWidth=0.8;
+        [-tw*0.4,-tw*0.15,tw*0.15,tw*0.4].forEach(ox=>{
+          og.beginPath(); og.moveTo(CX+ox,ulY+1); og.lineTo(CX+ox,ulY+1-th2*0.8); og.stroke();
+        });
       }
     }
-  }catch(e){console.warn('[LA] stopAllSessions error',e);}
-}
 
-async function connectLA(){
-  const avatarId=document.getElementById('avatar-sel').value;
-  const voiceId=document.getElementById('voice-sel').value;
-  if(!avatarId){setLAStatus('아바타를 선택하세요','error');return;}
-  if(laConnected)await disconnectLA();
+    // Lower teeth
+    if(o>0.3 && w>0.2){
+      const lh=Math.min((o-0.3)*15,10);
+      og.fillStyle='#f8f0f3';
+      og.beginPath(); og.ellipse(CX,llY*0.5+ulY*0.5+ch*0.55,cw-6,lh,0,0,Math.PI); og.fill();
+    }
 
-  showLoading('기존 세션 정리 중...');setPill('connecting');setLAStatus('연결 중...','');
-  const key=getKey();
-  if(key.startsWith('sk_')||key.length<30){
-    hideLoading();setPill('error');
-    setLAStatus('❌ HeyGen 키입니다. LiveAvatar UUID 형식 키를 입력하세요','error');
-    return;
+    // Tongue
+    if(o>0.5){
+      const ta=Math.min((o-0.5)/0.5,1);
+      const tg=og.createRadialGradient(CX,ulY+(llY-ulY)*0.78,0,CX,ulY+(llY-ulY)*0.78,cw*0.5);
+      tg.addColorStop(0,`rgba(225,85,100,${ta*0.92})`);
+      tg.addColorStop(1,`rgba(200,55,75,${ta*0.7})`);
+      og.fillStyle=tg;
+      og.beginPath(); og.ellipse(CX,ulY+(llY-ulY)*0.78,cw*0.48*ta,ch*0.38*ta,0,0,Math.PI); og.fill();
+    }
   }
 
-  try{
-    // 0. Stop any existing sessions (avoid concurrency limit)
-    await stopAllSessions();
+  // ── Upper lip ──
+  const ulg=og.createLinearGradient(CX,ulY-8,CX,ulY+4);
+  ulg.addColorStop(0,'#c03868'); ulg.addColorStop(1,'#d04878');
+  og.fillStyle=ulg;
+  og.beginPath();
+  og.moveTo(CX-cx2,ulY+2);
+  // Left to left peak (Cupid's bow)
+  og.bezierCurveTo(CX-cx2*0.62,ulY-5, CX-cx2*0.25,ulY-4, CX-4,ulY-8-o*2);
+  // Dip center
+  og.bezierCurveTo(CX-1.5,ulY-5, CX+1.5,ulY-5, CX+4,ulY-8-o*2);
+  // Right peak to right
+  og.bezierCurveTo(CX+cx2*0.25,ulY-4, CX+cx2*0.62,ulY-5, CX+cx2,ulY+2);
+  // Lower edge
+  og.bezierCurveTo(CX+cx2*0.5,ulY+1, CX,ulY+2, CX-cx2*0.5,ulY+1);
+  og.closePath(); og.fill();
 
-    // 1. Get session token
-    showLoading('세션 토큰 발급 중...');
-    const tokenBody={mode:'LITE',avatar_id:avatarId};
-    if(voiceId) tokenBody.voice_id=voiceId;
-    const tr=await laFetch('/v1/sessions/token',{method:'POST',body:JSON.stringify(tokenBody)});
-    const td=await tr.json();
-    console.log('[LA] token:', td);
-    if(td.code!==1000)throw new Error(`[${td.code}] ${td.message}`);
-    const{session_id,session_token}=td.data;
+  // Upper lip gloss
+  og.fillStyle='rgba(255,160,180,0.2)';
+  og.beginPath();
+  og.moveTo(CX-cx2*0.3,ulY-1); og.bezierCurveTo(CX-10,ulY-5,CX+10,ulY-5,CX+cx2*0.3,ulY-1);
+  og.bezierCurveTo(CX+10,ulY+1, CX-10,ulY+1, CX-cx2*0.3,ulY-1); og.closePath(); og.fill();
 
-    // 2. Start session → get LiveKit info
-    showLoading('LiveKit 세션 시작 중...');
-    const sr=await laFetchBearer('/v1/sessions/start',session_token,{method:'POST',body:JSON.stringify({session_token})});
-    const sd=await sr.json();
-    console.log('[LA] start:', sd);
-    if(sd.code!==1000)throw new Error(`[${sd.code}] ${sd.message}`);
-    const{livekit_url,livekit_client_token,ws_url}=sd.data;
+  // ── Lower lip ──
+  const llg=og.createLinearGradient(CX,ulY,CX,llY+14);
+  llg.addColorStop(0,'#cc5075'); llg.addColorStop(0.6,'#d86088'); llg.addColorStop(1,'#c05070');
+  og.fillStyle=llg;
+  og.beginPath();
+  og.moveTo(CX-cx2,ulY+2);
+  og.bezierCurveTo(CX-cx2*0.5,ulY+9+o*16, CX+cx2*0.5,ulY+9+o*16, CX+cx2,ulY+2);
+  og.bezierCurveTo(CX+cx2*0.55,llY+10, CX,llY+13, CX-cx2*0.55,llY+10);
+  og.closePath(); og.fill();
 
-    laSession={session_id,session_token,ws_url};
+  // Lower lip highlight
+  og.fillStyle='rgba(255,190,210,0.38)';
+  og.beginPath(); og.ellipse(CX+3,llY+8,10+w*4,4,0,0,Math.PI*2); og.fill();
 
-    // 3. Connect to LiveKit room
-    showLoading('LiveKit 연결 중...');
-    const {Room,RoomEvent,Track}=LivekitClient;
-    laRoom=new Room({adaptiveStream:true,dynacast:true});
+  // Mouth corners
+  og.fillStyle='#a82855';
+  [-cx2,cx2].forEach(ox=>{og.beginPath();og.arc(CX+ox,ulY+2,2,0,Math.PI*2);og.fill();});
 
-    laRoom.on(RoomEvent.TrackSubscribed,(track)=>{
-      const videoEl=document.getElementById('hg-video');
-      if(track.kind===Track.Kind.Video){
-        track.attach(videoEl);
-        videoEl.classList.add('visible');
-        canvas.classList.add('hidden');
-        document.getElementById('conn-badge').classList.add('show');
-        document.getElementById('badge-text').textContent=document.getElementById('avatar-sel').options[document.getElementById('avatar-sel').selectedIndex].textContent;
-        document.getElementById('fallback-opts').style.display='none';
-        hideLoading();
-        laConnected=true;
-        setPill('connected');setLAStatus('연결됨 ✓ — 텍스트 입력 후 말하기를 누르세요','');
-      }
-      if(track.kind===Track.Kind.Audio){const a=new Audio();track.attach(a);a.play().catch(()=>{});}
-    });
-
-    laRoom.on(RoomEvent.Disconnected,()=>onLADisconnected());
-
-    await laRoom.connect(livekit_url,livekit_client_token);
-
-    // 4. Connect speak WebSocket
-    connectSpeakWS(ws_url,session_token);
-
-    // Timeout if video never arrives
-    setTimeout(()=>{if(!laConnected){hideLoading();setLAStatus('연결 타임아웃 — 다시 시도하세요','error');setPill('error');}},25000);
-
-  }catch(e){
-    hideLoading();setPill('error');setLAStatus('연결 실패: '+e.message,'error');
-    console.error('[LA]',e);
-  }
+  og.restore();
 }
 
-function connectSpeakWS(wsUrl,token){
-  try{
-    // Try appending token as query param
-    const url=wsUrl+(wsUrl.includes('?')?'&':'?')+'session_token='+encodeURIComponent(token);
-    laSpeakWs=new WebSocket(url);
-    laSpeakWs.onopen=()=>console.log('[WS] speak socket open');
-    laSpeakWs.onmessage=e=>{
-      try{const m=JSON.parse(e.data);console.log('[WS]',m);
-        if(m.type==='avatar_start_talking'){setTTSStatus('말하는 중...','speaking');}
-        if(m.type==='avatar_stop_talking'){setTTSStatus('완료 ✓','');setTimeout(()=>setTTSStatus('준비됨',''),1500);}
-      }catch(_){}
-    };
-    laSpeakWs.onerror=()=>console.warn('[WS] speak socket error');
-    laSpeakWs.onclose=()=>console.log('[WS] speak socket closed');
-  }catch(e){console.warn('[WS] failed:',e);}
+/* ── Cheeks ── */
+function drawCheeks() {
+  og.save();
+  const a=S.cheek;
+  [-56,56].forEach(ox=>{
+    const cg=og.createRadialGradient(CX+ox,CY+20,0,CX+ox,CY+20,30);
+    cg.addColorStop(0,`rgba(255,125,155,${a})`);
+    cg.addColorStop(0.5,`rgba(255,110,140,${a*0.5})`);
+    cg.addColorStop(1,'transparent');
+    og.fillStyle=cg; og.beginPath(); og.ellipse(CX+ox,CY+20,30,19,0,0,Math.PI*2); og.fill();
+  });
+  og.restore();
 }
 
-async function disconnectLA(){
-  laConnected=false;
-  if(laSession?.session_id){
-    laFetch('/v1/sessions/stop',{method:'POST',body:JSON.stringify({session_id:laSession.session_id})}).catch(()=>{});
-  }
-  if(laRoom){try{await laRoom.disconnect();}catch(_){}laRoom=null;}
-  if(laSpeakWs){laSpeakWs.close();laSpeakWs=null;}
-  laSession=null;
-  onLADisconnected();
+/* ── Hair Back ── */
+function drawHairBack() {
+  og.save();
+  const hg=og.createLinearGradient(CX,CY-130,CX,H+20);
+  hg.addColorStop(0,'#6c42b4');
+  hg.addColorStop(0.35,'#5535a0');
+  hg.addColorStop(0.7,'#42288a');
+  hg.addColorStop(1,'#2a1660');
+  og.fillStyle=hg;
+
+  // Main volume
+  og.beginPath(); og.ellipse(CX,CY-32,102,112,0,0,Math.PI*2); og.fill();
+
+  // Left flowing strand
+  og.beginPath();
+  og.moveTo(CX-85,CY-20);
+  og.bezierCurveTo(CX-140,CY+50, CX-130,CY+160, CX-105,H+10);
+  og.lineTo(CX-65,H+10);
+  og.bezierCurveTo(CX-95,CY+160, CX-105,CY+55, CX-55,CY-12);
+  og.closePath(); og.fill();
+
+  // Right flowing strand
+  og.beginPath();
+  og.moveTo(CX+85,CY-20);
+  og.bezierCurveTo(CX+140,CY+50, CX+130,CY+160, CX+105,H+10);
+  og.lineTo(CX+65,H+10);
+  og.bezierCurveTo(CX+95,CY+160, CX+105,CY+55, CX+55,CY-12);
+  og.closePath(); og.fill();
+
+  og.restore();
 }
 
-function onLADisconnected(){
-  laConnected=false;
-  const v=document.getElementById('hg-video');v.classList.remove('visible');v.srcObject=null;
-  canvas.classList.remove('hidden');
-  document.getElementById('conn-badge').classList.remove('show');
-  document.getElementById('fallback-opts').style.display='';
-  setPill('');setLAStatus('연결 해제됨','');
+/* ── Hair Front / Bangs ── */
+function drawHairFront() {
+  og.save();
+  const fg=og.createLinearGradient(CX,CY-140,CX,CY-10);
+  fg.addColorStop(0,'#8050c8');
+  fg.addColorStop(0.5,'#6e40b4');
+  fg.addColorStop(1,'#5830a0');
+  og.fillStyle=fg;
+
+  // Main bang shape
+  og.beginPath();
+  og.moveTo(CX-102,CY-52);
+  og.bezierCurveTo(CX-96,CY-140, CX-8,CY-148, CX,CY-148);
+  og.bezierCurveTo(CX+8,CY-148, CX+96,CY-140, CX+102,CY-52);
+  og.bezierCurveTo(CX+78,CY-40, CX+48,CY-14, CX+28,CY-42);
+  og.bezierCurveTo(CX+20,CY-28, CX+10,CY-24, CX,CY-38);
+  og.bezierCurveTo(CX-10,CY-24, CX-20,CY-28, CX-28,CY-42);
+  og.bezierCurveTo(CX-48,CY-14, CX-78,CY-40, CX-102,CY-52);
+  og.closePath(); og.fill();
+
+  // Side tufts
+  og.fillStyle='#7545be';
+  og.beginPath();
+  og.moveTo(CX-90,CY-30);
+  og.bezierCurveTo(CX-120,CY+2, CX-115,CY+48, CX-94,CY+56);
+  og.bezierCurveTo(CX-78,CY+62, CX-70,CY+32, CX-74,CY-22);
+  og.closePath(); og.fill();
+  og.beginPath();
+  og.moveTo(CX+90,CY-30);
+  og.bezierCurveTo(CX+120,CY+2, CX+115,CY+48, CX+94,CY+56);
+  og.bezierCurveTo(CX+78,CY+62, CX+70,CY+32, CX+74,CY-22);
+  og.closePath(); og.fill();
+
+  og.restore();
 }
 
-// ── LiveKit 오디오 publish (LITE 모드 립싱크 핵심) ──
-let localAudioTrack = null;
-let ttsAudioCtx = null;
-let masterGain = null;
+/* ── Hair Detail / Highlights ── */
+function drawHairDetail() {
+  og.save();
 
-async function ensureLKAudio() {
-  if (localAudioTrack && laRoom) return;
-  ttsAudioCtx = new AudioContext();
-  const dest = ttsAudioCtx.createMediaStreamDestination();
-  masterGain = ttsAudioCtx.createGain();
-  masterGain.gain.value = 1.0;
-  masterGain.connect(dest);
+  // Main highlight streak
+  og.fillStyle='rgba(175,145,240,0.38)';
+  og.beginPath(); og.ellipse(CX-22,CY-105,11,32,-0.22,0,Math.PI*2); og.fill();
+  og.beginPath(); og.ellipse(CX+36,CY-98,7,20,0.25,0,Math.PI*2); og.fill();
 
-  const { LocalAudioTrack } = LivekitClient;
-  const rawTrack = dest.stream.getAudioTracks()[0];
-  localAudioTrack = new LocalAudioTrack(rawTrack, undefined, false);
-  await laRoom.localParticipant.publishTrack(localAudioTrack);
-  ttsAudioCtx._dest = dest;
-  console.log('[LK] local audio track published');
-}
+  // Edge highlight on side tufts
+  og.fillStyle='rgba(155,120,220,0.25)';
+  og.beginPath(); og.ellipse(CX-88,CY+10,5,22,-0.1,0,Math.PI*2); og.fill();
+  og.beginPath(); og.ellipse(CX+88,CY+10,5,22,0.1,0,Math.PI*2); og.fill();
 
-async function playTTSToLiveKit(text) {
-  await ensureLKAudio();
-
-  // Speech-like oscillator: avatar lip-syncs to this
-  const osc = ttsAudioCtx.createOscillator();
-  const ampEnv = ttsAudioCtx.createGain();
-  const lfo = ttsAudioCtx.createOscillator();
-  const lfoGain = ttsAudioCtx.createGain();
-
-  osc.type = 'sawtooth';
-  osc.frequency.value = 180;
-  lfo.frequency.value = 9; // ~9Hz = syllable rate
-  lfoGain.gain.value = 0.4;
-
-  lfo.connect(lfoGain);
-  lfoGain.connect(ampEnv.gain);
-  ampEnv.gain.value = 0.5;
-  osc.connect(ampEnv);
-  ampEnv.connect(masterGain);
-
-  osc.start(); lfo.start();
-
-  // Browser TTS for user to hear
-  await new Promise(resolve => {
-    const utt = new SpeechSynthesisUtterance(text);
-    const voices = speechSynthesis.getVoices();
-    const vi = parseInt(document.getElementById('fbv-sel')?.value);
-    if (!isNaN(vi) && voices[vi]) utt.voice = voices[vi];
-    utt.rate = 1.0; utt.pitch = 1.1;
-    utt.onend = resolve; utt.onerror = resolve;
-    speechSynthesis.cancel();
-    speechSynthesis.speak(utt);
+  // Hair strand lines (texture)
+  og.strokeStyle='rgba(90,50,160,0.2)'; og.lineWidth=1.2;
+  [[-20,CY-140,-15,CY-30],[0,CY-145,5,CY-35],[20,CY-140,18,CY-32]].forEach(([x1,y1,x2,y2])=>{
+    og.beginPath(); og.moveTo(CX+x1,y1); og.lineTo(CX+x2,y2); og.stroke();
   });
 
-  osc.stop(); lfo.stop();
+  og.restore();
 }
 
-async function laSpeakText(text){
-  if(!laConnected) return false;
-  // Also try WebSocket (server-side TTS via HeyGen)
-  if(laSpeakWs && laSpeakWs.readyState===WebSocket.OPEN){
-    laSpeakWs.send(JSON.stringify({
-      type:'talk', text, task_type:'talk',
-      voice_setting:{ voice_id: document.getElementById('voice-sel').value||undefined, rate:1.0 }
-    }));
-  }
-  // Always publish TTS audio to LiveKit for lip-sync
-  playTTSToLiveKit(text).then(()=>{
-    setTTSStatus('완료 ✓','');
-    setTimeout(()=>setTTSStatus('준비됨',''),2000);
-  });
-  return true;
+/* ── Accessory (star pin) ── */
+function drawAccessory() {
+  og.save();
+  // Glow
+  const ag=og.createRadialGradient(CX+60,CY-82,0,CX+60,CY-82,16);
+  ag.addColorStop(0,'rgba(255,220,60,0.4)'); ag.addColorStop(1,'transparent');
+  og.fillStyle=ag; og.beginPath(); og.ellipse(CX+60,CY-82,16,16,0,0,Math.PI*2); og.fill();
+
+  og.fillStyle='#fbbf24'; og.strokeStyle='#f59e0b'; og.lineWidth=1;
+  og.shadowColor='#fbbf24'; og.shadowBlur=10;
+  og.save(); og.translate(CX+60,CY-82);
+  og.beginPath();
+  for(let i=0;i<10;i++){const r=i%2===0?12:5,a=(i*Math.PI)/5-Math.PI/2;i===0?og.moveTo(r*Math.cos(a),r*Math.sin(a)):og.lineTo(r*Math.cos(a),r*Math.sin(a));}
+  og.closePath(); og.fill(); og.stroke();
+  og.restore();
+  og.restore();
 }
 
-function showLoading(msg){const o=document.getElementById('loading-overlay');o.querySelector('#loading-text').textContent=msg;o.classList.add('show');}
-function hideLoading(){document.getElementById('loading-overlay').classList.remove('show');}
-function setLAStatus(t,m){document.getElementById('la-status').textContent=t;document.getElementById('la-dot').className='dot '+(m||'');}
-function setPill(s){const p=document.getElementById('la-pill');p.className='pill'+(s?' '+s:'');p.textContent={connected:'연결됨',connecting:'연결 중...',error:'오류'}[s]||'미연결';}
-function togglePanel(){const h=document.getElementById('la-ph');const b=document.getElementById('la-pb');h.classList.toggle('open');b.classList.toggle('hide');}
+// ════════════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ════════════════════════════════════════════════════════
+let lastT=0, visT=0;
 
-// ═══════════════════════════════════
-//  TTS (browser fallback)
-// ═══════════════════════════════════
-const synth=window.speechSynthesis;let utt=null,vTimer=null;
-function loadFBV(){const s=document.getElementById('fbv-sel');const vs=synth.getVoices();if(!vs.length){setTimeout(loadFBV,300);return;}s.innerHTML='';vs.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;s.appendChild(o);});const ko=vs.findIndex(v=>v.lang.startsWith('ko'));if(ko>=0)s.value=ko;}
-synth.onvoiceschanged=loadFBV;loadFBV();
-function setTTSStatus(t,m){document.getElementById('tts-st').textContent=t;document.getElementById('tts-dot').className='dot '+(m||'');document.getElementById('speak-btn').className='btn-p'+(m==='speaking'?' speaking':'');}
+function loop(ts) {
+  const dt=Math.min(ts-lastT,50); lastT=ts;
 
-async function speak(){
-  const text=document.getElementById('txt').value.trim();if(!text)return;
-  // LiveAvatar mode
-  if(laConnected){
-    setTTSStatus('아바타에게 전송 중...','speaking');
-    const ok=await laSpeakText(text);
-    if(!ok)setTTSStatus('전송 실패 — WebSocket 미연결','error');
-    return;
+  // Timer updates
+  S.breathT += dt*0.0008;
+  S.bobT    += dt*0.0016*(S.speaking?1.9:0.5);
+
+  // Blink
+  S.blinkTimer -= dt;
+  if(S.blinkTimer<=0 && !S.blinking){ S.blinkTimer=2000+Math.random()*4000; doBlink(); }
+
+  // Eye glance
+  S.glTimer -= dt;
+  if(S.glTimer<=0){
+    S.glTimer=2500+Math.random()*5000;
+    S.glX=(Math.random()-0.5)*1.6;
+    S.glY=(Math.random()-0.5)*0.5;
   }
-  // Canvas fallback
-  if(synth.speaking)synth.cancel();clearVT();
+
+  // Mouth smooth
+  const atk=dt*0.02, rel=dt*0.009;
+  S.openness  = lerp(S.openness,  S.opennessT,  S.opennessT >S.openness  ? atk : rel);
+  S.wideRatio = lerp(S.wideRatio, S.wideRatioT, S.wideRatioT>S.wideRatio ? atk : rel*1.3);
+
+  // TTS viseme cycling (when speaking without live audio)
+  if(S.speaking && !liveCapturing){
+    visT-=dt;
+    if(visT<=0){
+      visT=55+Math.random()*65;
+      const picks=[0.08,0.2,0.4,0.6,0.75,0.9,0.5,0.3,0.7,0.15,0.85];
+      S.opennessT  = picks[Math.floor(Math.random()*picks.length)];
+      S.wideRatioT = 0.2+Math.random()*0.75;
+    }
+  } else if(!liveCapturing){
+    S.opennessT=0; S.wideRatioT=0.5;
+  }
+
+  S.cheek = lerp(S.cheek, (S.speaking||liveCapturing)?0.5:0.22, dt*0.005);
+
+  render();
+  requestAnimationFrame(loop);
+}
+
+function doBlink(){
+  S.blinking=true;
+  const dur=120, st=performance.now();
+  function f(t){const p=(t-st)/dur;S.blink=p<0.5?ease(p*2):ease((1-p)*2);if(p<1)requestAnimationFrame(f);else{S.blink=0;S.blinking=false;}}
+  requestAnimationFrame(f);
+}
+requestAnimationFrame(loop);
+
+// Viseme from text
+function charV(ch){
+  const c=ch.charCodeAt(0);
+  if(c>=0xAC00&&c<=0xD7A3){
+    const j=Math.floor((c-0xAC00)/28)%21;
+    const m=[
+      {o:.82,w:.88},{o:.52,w:.92},{o:.78,w:.85},{o:.48,w:.90},
+      {o:.58,w:.52},{o:.50,w:.85},{o:.52,w:.54},{o:.46,w:.82},
+      {o:.55,w:.18},{o:.70,w:.65},{o:.50,w:.72},{o:.46,w:.62},
+      {o:.50,w:.20},{o:.40,w:.10},{o:.46,w:.45},{o:.42,w:.62},
+      {o:.36,w:.28},{o:.38,w:.12},{o:.22,w:.62},{o:.30,w:.72},
+      {o:.34,w:.94}
+    ];
+    return m[j]||{o:.14,w:.55};
+  }
+  switch(ch.toLowerCase()){
+    case'a':return{o:.80,w:.88}; case'e':return{o:.50,w:.90};
+    case'i':return{o:.30,w:.96}; case'o':return{o:.55,w:.16};
+    case'u':return{o:.38,w:.08};
+  }
+  return /\s/.test(ch)?null:{o:.12,w:.52};
+}
+
+// ════════════════════════════════════════════════════════
+//  TTS
+// ════════════════════════════════════════════════════════
+const synth=window.speechSynthesis; let utt=null, vt=null;
+
+function loadV(){
+  const s=document.getElementById('vsel');
+  const vs=synth.getVoices(); if(!vs.length){setTimeout(loadV,300);return;}
+  s.innerHTML=''; vs.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;s.appendChild(o);});
+  const ko=vs.findIndex(v=>v.lang.startsWith('ko')); if(ko>=0)s.value=ko;
+}
+synth.onvoiceschanged=loadV; loadV();
+
+function setTS(t,m){document.getElementById('tts-st').textContent=t;document.getElementById('tts-dot').className='dot '+(m||'');document.getElementById('spk-btn').className='btn-p'+(m==='on'?' speaking':'');}
+
+function speak(){
+  const text=document.getElementById('txt').value.trim(); if(!text)return;
+  if(synth.speaking)synth.cancel(); clearVT();
   utt=new SpeechSynthesisUtterance(text);
-  const vs=synth.getVoices();const vi=parseInt(document.getElementById('fbv-sel').value);
+  const vs=synth.getVoices(); const vi=parseInt(document.getElementById('vsel').value);
   if(!isNaN(vi)&&vs[vi])utt.voice=vs[vi];
-  utt.rate=parseFloat(document.getElementById('spd-sel').value);utt.pitch=1.15;
-  utt.onstart=()=>{st.speaking=true;setTTSStatus('말하는 중...','speaking');schedV(text,utt.rate);};
-  utt.onend=()=>{st.speaking=false;st.openT=0;st.wideT=.5;clearVT();setTTSStatus('완료 ✓','');setTimeout(()=>setTTSStatus('준비됨',''),2000);};
-  utt.onerror=()=>{st.speaking=false;clearVT();setTTSStatus('오류','error');};
+  utt.rate=parseFloat(document.getElementById('spd').value); utt.pitch=1.1;
+  utt.onstart=()=>{S.speaking=true;setTS('말하는 중...','on');schedV(text,utt.rate);};
+  utt.onend=()=>{S.speaking=false;S.opennessT=0;S.wideRatioT=.5;clearVT();setTS('완료 ✓','');setTimeout(()=>setTS('준비됨',''),2000);};
+  utt.onerror=()=>{S.speaking=false;clearVT();setTS('오류','err');};
   synth.speak(utt);
 }
-function schedV(text,rate){const mpc=1000/(rate*5.5);const f=[];let t=60;for(const ch of text){const v=charV(ch);if(v)f.push({at:t,...v});t+=/\s/.test(ch)?mpc*.4:mpc;}const s=Date.now();let i=0;vTimer=setInterval(()=>{if(!st.speaking||i>=f.length){clearVT();return;}const n=Date.now()-s;while(i<f.length&&f[i].at<=n){st.openT=f[i].o;st.wideT=f[i].w;i++;}},16);}
-function clearVT(){if(vTimer){clearInterval(vTimer);vTimer=null;}}
-function stopSpeak(){if(laConnected&&laSpeakWs&&laSpeakWs.readyState===WebSocket.OPEN){laSpeakWs.send(JSON.stringify({type:'interrupt'}));}synth.cancel();st.speaking=false;st.openT=0;st.wideT=.5;clearVT();setTTSStatus('멈춤','');}
+
+function schedV(text,rate){
+  const mpc=1000/(rate*5.5); const f=[]; let t=60;
+  for(const ch of text){const v=charV(ch);if(v)f.push({at:t,...v});t+=/\s/.test(ch)?mpc*0.38:mpc;}
+  const st=Date.now(); let i=0;
+  vt=setInterval(()=>{
+    if(!S.speaking||i>=f.length){clearVT();return;}
+    const n=Date.now()-st;
+    while(i<f.length&&f[i].at<=n){S.opennessT=f[i].o;S.wideRatioT=f[i].w;i++;}
+  },16);
+}
+function clearVT(){if(vt){clearInterval(vt);vt=null;}}
+function stopSpeak(){synth.cancel();S.speaking=false;S.opennessT=0;S.wideRatioT=.5;clearVT();setTS('멈춤','');}
 document.getElementById('txt').addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'){e.preventDefault();speak();}});
 
-// ═══════════════════════════════════
-//  LIVE AUDIO (canvas)
-// ═══════════════════════════════════
-let liveCapturing=false,curMethod='mic',audioCtx2=null,analyser2=null,freq2=null,capStream=null,liveRaf=null;
-const fCvs=document.getElementById('freq-canvas');const fCtx=fCvs.getContext('2d');
-const lBar=document.getElementById('level-bar');const lBarW=document.getElementById('level-bar-wrap');
+// ════════════════════════════════════════════════════════
+//  LIVE AUDIO
+// ════════════════════════════════════════════════════════
+let liveCapturing=false, curM='mic';
+let actx=null, analyser=null, freqD=null, capStream=null, livRaf=null;
+const fq=document.getElementById('fq'), fqg=fq.getContext('2d');
+const lbar=document.getElementById('level-bar'), lwrap=document.getElementById('level-wrap');
 document.getElementById('sens').addEventListener('input',function(){document.getElementById('sv').textContent=this.value;});
-function switchMethod(m){if(liveCapturing)stopCapture();curMethod=m;document.getElementById('mtab-mic').classList.toggle('active',m==='mic');document.getElementById('mtab-scr').classList.toggle('active',m==='screen');document.getElementById('m-mic').style.display=m==='mic'?'':'none';document.getElementById('m-scr').style.display=m==='screen'?'':'none';document.getElementById('live-btn').textContent=m==='mic'?'🎤 마이크 입력 시작':'🖥️ 화면 공유로 캡처 시작';document.getElementById('live-btn').className='btn-live';setLiveStatus('대기 중','');}
-async function refreshMics(){try{await navigator.mediaDevices.getUserMedia({audio:true}).then(s=>s.getTracks().forEach(t=>t.stop())).catch(()=>{});const ds=await navigator.mediaDevices.enumerateDevices();const s=document.getElementById('mic-sel');s.innerHTML='';ds.filter(d=>d.kind==='audioinput').forEach(d=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||'마이크 '+d.deviceId.slice(0,6);s.appendChild(o);});}catch(e){}}
+
+function SM(m){if(liveCapturing)stopCap();curM=m;document.getElementById('mt-mic').classList.toggle('active',m==='mic');document.getElementById('mt-scr').classList.toggle('active',m==='screen');document.getElementById('m-mic').style.display=m==='mic'?'':'none';document.getElementById('m-scr').style.display=m==='screen'?'':'none';document.getElementById('live-btn').textContent=m==='mic'?'🎤 마이크 입력 시작':'🖥️ 화면 공유로 캡처';document.getElementById('live-btn').className='btn-live';setLS('대기 중','');}
+async function refreshMics(){try{await navigator.mediaDevices.getUserMedia({audio:true}).then(s=>s.getTracks().forEach(t=>t.stop())).catch(()=>{});const ds=await navigator.mediaDevices.enumerateDevices();const s=document.getElementById('msel');s.innerHTML='';ds.filter(d=>d.kind==='audioinput').forEach(d=>{const o=document.createElement('option');o.value=d.deviceId;o.textContent=d.label||'마이크 '+d.deviceId.slice(0,6);s.appendChild(o);});}catch(e){}}
 refreshMics();
-function setLiveStatus(t,m){document.getElementById('live-st').textContent=t;document.getElementById('live-dot').className='dot '+(m||'');}
-async function toggleCapture(){if(liveCapturing){stopCapture();return;}if(curMethod==='mic')await startMic();else await startScreen();}
-async function startMic(){setLiveStatus('권한 요청 중...','');try{const did=document.getElementById('mic-sel').value;capStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:did?{exact:did}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});setupA(capStream);setCapUI('🎤 마이크 캡처 중 — 소리에 맞춰 입이 움직입니다','🎤 캡처 중지');capStream.getAudioTracks()[0].onended=()=>stopCapture();}catch(e){setLiveStatus(e.name==='NotAllowedError'?'❌ 권한 거부':'오류: '+e.message,'error');}}
-async function startScreen(){setLiveStatus('화면 공유 대기 중...','');try{capStream=await navigator.mediaDevices.getDisplayMedia({video:{width:1,height:1,frameRate:1},audio:{echoCancellation:false,noiseSuppression:false}});if(capStream.getAudioTracks().length===0){setLiveStatus('⚠️ "시스템 오디오 공유" 체크 후 재시도','error');capStream.getTracks().forEach(t=>t.stop());capStream=null;return;}capStream.getVideoTracks().forEach(t=>t.stop());setupA(capStream);setCapUI('🖥️ 화면 공유 캡처 중','⏹ 캡처 중지');capStream.getAudioTracks()[0].onended=()=>stopCapture();}catch(e){setLiveStatus(e.name==='NotAllowedError'?'공유 취소':'오류: '+e.message,'error');}}
-function setupA(s){audioCtx2=new AudioContext();const src=audioCtx2.createMediaStreamSource(s);analyser2=audioCtx2.createAnalyser();analyser2.fftSize=2048;analyser2.smoothingTimeConstant=.82;src.connect(analyser2);freq2=new Uint8Array(analyser2.frequencyBinCount);liveCapturing=true;fCvs.classList.add('visible');lBarW.classList.add('visible');analyzeA();}
-function setCapUI(s,b){setLiveStatus(s,'capturing');document.getElementById('live-btn').textContent=b;document.getElementById('live-btn').className='btn-live capturing';}
-function stopCapture(){liveCapturing=false;if(capStream){capStream.getTracks().forEach(t=>t.stop());capStream=null;}if(audioCtx2){audioCtx2.close();audioCtx2=null;}if(liveRaf){cancelAnimationFrame(liveRaf);liveRaf=null;}st.openT=0;st.wideT=.5;fCvs.classList.remove('visible');lBarW.classList.remove('visible');document.getElementById('live-btn').textContent=curMethod==='mic'?'🎤 마이크 입력 시작':'🖥️ 화면 공유로 캡처 시작';document.getElementById('live-btn').className='btn-live';setLiveStatus('캡처 종료','');}
-function analyzeA(){if(!liveCapturing)return;liveRaf=requestAnimationFrame(analyzeA);analyser2.getByteFrequencyData(freq2);const sr=audioCtx2.sampleRate,bin=sr/analyser2.fftSize;const lo=Math.max(1,Math.floor(200/bin)),hi=Math.min(freq2.length-1,Math.floor(4000/bin));let sum=0;for(let i=lo;i<=hi;i++)sum+=freq2[i];const avg=sum/(hi-lo+1);const loH=Math.max(1,Math.floor(1500/bin));let sumH=0;for(let i=loH;i<=hi;i++)sumH+=freq2[i];const avgH=sumH/(hi-loH+1);const hiL=Math.floor(800/bin);let sumL=0;for(let i=lo;i<=hiL;i++)sumL+=freq2[i];const avgL=sumL/(hiL-lo+1);const sens=parseFloat(document.getElementById('sens').value);if(avg<sens*.28){st.openT=0;st.wideT=.5;lBar.style.width='0%';drawFV();return;}st.openT=Math.pow(Math.min(avg/sens,1),.6);const br=avgH/Math.max(avgL,1);st.wideT=Math.max(.1,Math.min(.95,(br-.3)/1));lBar.style.width=(st.openT*100)+'%';drawFV();}
-function drawFV(){const fw=fCvs.width,fh=fCvs.height;fCtx.clearRect(0,0,fw,fh);const bw=Math.ceil(fw/80),step=Math.floor(freq2.length/80);for(let i=0;i<80;i++){let v=0;for(let j=0;j<step;j++)v+=freq2[i*step+j];v/=step;const h=(v/255)*fh;fCtx.fillStyle=`hsla(${200+i*1.6},75%,62%,0.82)`;fCtx.fillRect(i*bw,fh-h,bw-1,h);}}
+function setLS(t,m){document.getElementById('live-st').textContent=t;document.getElementById('live-dot').className='dot '+(m||'');}
+async function toggleCap(){if(liveCapturing){stopCap();return;}if(curM==='mic')await startMic();else await startScr();}
+async function startMic(){setLS('권한 요청 중...','');try{const did=document.getElementById('msel').value;capStream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:did?{exact:did}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false}});setupA(capStream);setCUI('🎤 캡처 중 — 소리에 맞춰 입 움직임','🎤 캡처 중지');capStream.getAudioTracks()[0].onended=stopCap;}catch(e){setLS(e.name==='NotAllowedError'?'❌ 권한 거부':'오류: '+e.message,'err');}}
+async function startScr(){setLS('화면 공유 대기 중...','');try{capStream=await navigator.mediaDevices.getDisplayMedia({video:{width:1,height:1,frameRate:1},audio:{echoCancellation:false,noiseSuppression:false}});if(!capStream.getAudioTracks().length){setLS('⚠️ 시스템 오디오 공유 체크 후 재시도','err');capStream.getTracks().forEach(t=>t.stop());capStream=null;return;}capStream.getVideoTracks().forEach(t=>t.stop());setupA(capStream);setCUI('🖥️ 화면 공유 캡처 중','⏹ 캡처 중지');capStream.getAudioTracks()[0].onended=stopCap;}catch(e){setLS(e.name==='NotAllowedError'?'공유 취소됨':'오류: '+e.message,'err');}}
+function setupA(s){actx=new AudioContext();const src=actx.createMediaStreamSource(s);analyser=actx.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=0.80;src.connect(analyser);freqD=new Uint8Array(analyser.frequencyBinCount);liveCapturing=true;fq.classList.add('show');lwrap.classList.add('show');doAnalyze();}
+function setCUI(s,b){setLS(s,'live');const btn=document.getElementById('live-btn');btn.textContent=b;btn.className='btn-live on';}
+function stopCap(){liveCapturing=false;if(capStream){capStream.getTracks().forEach(t=>t.stop());capStream=null;}if(actx){actx.close();actx=null;}if(livRaf){cancelAnimationFrame(livRaf);livRaf=null;}S.opennessT=0;S.wideRatioT=.5;fq.classList.remove('show');lwrap.classList.remove('show');document.getElementById('live-btn').textContent=curM==='mic'?'🎤 마이크 입력 시작':'🖥️ 화면 공유로 캡처';document.getElementById('live-btn').className='btn-live';setLS('캡처 종료','');}
+function doAnalyze(){if(!liveCapturing)return;livRaf=requestAnimationFrame(doAnalyze);analyser.getByteFrequencyData(freqD);const sr=actx.sampleRate,bin=sr/analyser.fftSize;const lo=Math.max(1,Math.floor(200/bin)),hi=Math.min(freqD.length-1,Math.floor(4000/bin));let s=0;for(let i=lo;i<=hi;i++)s+=freqD[i];const avg=s/(hi-lo+1);const loH=Math.max(1,Math.floor(1500/bin));let sh=0;for(let i=loH;i<=hi;i++)sh+=freqD[i];const avgH=sh/(hi-loH+1);const hiL=Math.floor(800/bin);let sl=0;for(let i=lo;i<=hiL;i++)sl+=freqD[i];const avgL=sl/(hiL-lo+1);const sens=parseFloat(document.getElementById('sens').value);if(avg<sens*0.26){S.opennessT=0;S.wideRatioT=.5;lbar.style.width='0%';drawFQ();return;}S.opennessT=Math.pow(Math.min(avg/sens,1),.58);const br=avgH/Math.max(avgL,1);S.wideRatioT=Math.max(.08,Math.min(.95,(br-.25)/.95));lbar.style.width=(S.opennessT*100)+'%';drawFQ();}
+function drawFQ(){const fw=fq.width,fh=fq.height;fqg.clearRect(0,0,fw,fh);const bw=Math.ceil(fw/80),step=Math.floor(freqD.length/80);for(let i=0;i<80;i++){let v=0;for(let j=0;j<step;j++)v+=freqD[i*step+j];v/=step;const h=(v/255)*fh;fqg.fillStyle=`hsla(${200+i*1.8},78%,65%,0.85)`;fqg.fillRect(i*bw,fh-h,bw-1,h);}}
 
-// ═══════════════════════════════════
-//  TABS / INIT
-// ═══════════════════════════════════
-function switchTab(n){document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&n==='tts')||(i===1&&n==='live')));document.getElementById('tab-tts').classList.toggle('active',n==='tts');document.getElementById('tab-live').classList.toggle('active',n==='live');}
-
-window.addEventListener('load',()=>{
-  const k=localStorage.getItem('la_key');
-  if(k){document.getElementById('api-key').value=k;loadAvatars();}
-});
-document.getElementById('api-key').addEventListener('change',()=>loadAvatars());
+function ST(n){document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&n==='tts')||(i===1&&n==='live')));document.getElementById('t-tts').classList.toggle('active',n==='tts');document.getElementById('t-live').classList.toggle('active',n==='live');}
 </script>
 </body>
 </html>
